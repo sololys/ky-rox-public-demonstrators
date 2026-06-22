@@ -1,24 +1,112 @@
 # KY-ROX Public Demonstrators
 
-This repository contains public-facing demonstrators from the KY-ROX / Realization Grammar architecture.
+Fail-open exploration. Fail-closed consequence.
 
-This is the admitted public surface.
+KY-ROX is a realization-grammar architecture for systems where generated candidates must be separated from realized consequences.
 
-It is not a reduced version of the project.
-It is not the protected implementation core.
+In many cyber-physical systems, the dangerous step is not prediction.
+The dangerous step is when prediction becomes action.
 
-The purpose is to make the architecture inspectable without making the protected core extractable.
+KY-ROX focuses on that boundary.
+
+Core question:
+
+When should a candidate be allowed to become consequence?
+
+This repository contains public demonstrators that make that question inspectable through deterministic software tests, reproducible run logs, and manifest/hash discipline.
+
+## Why this matters
+
+Modern systems increasingly combine prediction, automation, and physical action.
+
+That creates a hard boundary problem:
+
+- an AI model can suggest
+- a controller can compute
+- a sensor can report
+- a pipeline can trigger
+- an actuator can execute
+
+But a suggestion is not a consequence.
+
+KY-ROX treats execution as an admitted transition, not as a natural continuation of computation.
+
+## Core principle
+
+Candidate != Consequence
+
+A candidate may be explored freely.
+
+A consequence must pass the gate.
+
+## Application areas
+
+KY-ROX is relevant to domains where unsafe or irreversible actions must be blocked before they become real-world consequences.
+
+Potential application areas include:
+
+- cyber-physical systems
+- grid and infrastructure control
+- AI-assisted automation
+- robotics and autonomous systems
+- industrial safety interlocks
+- process control
+- aerospace and launch sequencing
+- audit-driven control systems
+- deterministic runtime governance
+- safety-critical decision pipelines
+
+This repository does not claim production readiness in these domains.
+It provides public, reproducible demonstrators of the underlying gate logic.
+
+## Current public demonstrator
+
+### CPS Derivative Gate v0.1
+
+A deterministic software microtest comparing two safety logics in the same simulated grid-overload event.
+
+Baseline gate:
+
+R(t) >= R_LIMIT
+
+KY-ROX derivative gate:
+
+dR/dt >= DELTA_R
+
+## Verified result
+
+KY-ROX derivative gate HOLD: 8.7s
+KY-ROX derivative gate KILL: 8.9s
+Baseline threshold gate KILL: 9.6s
+
+Observed KILL lead time: 0.7s
+Irreversibility budget saved at KY-ROX KILL: 0.468273
+
+RESULT=PASS
+
+## What this demonstrates
+
+The microtest shows that derivative-gating can detect simulated irreversible escalation before ordinary accumulated-threshold gating in the same deterministic CPS event.
+
+Public point:
+
+Do not wait only for damage level.
+Watch the rate at which consequence becomes irreversible.
 
 ## What this repository shows
 
 - deterministic microtests
 - reproducible run logs
-- manifest/hash discipline
-- high-level realization grammar
-- simulated gate behavior
+- manifest/hash verification
 - bounded claim levels
+- simulated gate behavior
+- public-facing realization-grammar concepts
 
-## What this repository does not disclose
+## What this repository protects
+
+This repository is the public surface, not the protected implementation core.
+
+It does not disclose:
 
 - patent claims
 - production interlock designs
@@ -29,30 +117,22 @@ The purpose is to make the architecture inspectable without making the protected
 - confidential architecture notes
 - operational parameters for real systems
 
-## Current public artifact
-
-### CPS Derivative Gate v0.1
-
-Status: SOFTWARE SIMULATION / DETERMINISTIC MICROTEST / PASS / HASH VERIFIED
-
-Core result:
-
-- KY-ROX derivative gate HOLD: 8.7s
-- KY-ROX derivative gate KILL: 8.9s
-- baseline threshold gate KILL: 9.6s
-- observed KILL lead time: 0.7s
-- irreversibility budget saved at KY-ROX KILL: 0.468273
-
-Boundary:
-
-This artifact demonstrates simulated gate behavior.
-It does not constitute physical validation, hardware enforcement, product certification, or production safety design.
-
 ## Claim level
 
-Software simulation unless explicitly stated otherwise.
+Unless explicitly stated otherwise, artifacts in this repository are:
 
-## Rule
+SOFTWARE SIMULATION
+DETERMINISTIC MICROTEST
+PUBLIC DEMONSTRATOR
+
+They are not:
+
+PHYSICAL VALIDATION
+PRODUCT CERTIFICATION
+PRODUCTION SAFETY DESIGN
+HARDWARE ENFORCEMENT PROOF
+
+## Public rule
 
 Public enough to be inspected.
 Bounded enough to protect the core.
