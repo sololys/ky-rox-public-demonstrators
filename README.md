@@ -59,6 +59,23 @@ Potential application areas include:
 This repository does not claim production readiness in these domains.
 It provides public, reproducible demonstrators of the underlying gate logic.
 
+## Functional safety relevance, not certification
+
+KY-ROX is not presented as a certified safety system, SIL-rated component, or production-ready interlock.
+
+Its industrial relevance is narrower and more foundational: it demonstrates deterministic gate behavior before a candidate is allowed to become consequence.
+
+The public demonstrators are relevant to functional-safety questions such as:
+
+- separating prediction from action
+- forcing explicit OPEN / HOLD / KILL decisions
+- failing closed instead of allowing unsafe continuation
+- detecting rate-of-change escalation before accumulated threshold failure
+- preserving reproducible logs, hashes, and manifest discipline
+- keeping simulation claims separate from hardware or certification claims
+
+These artifacts do not claim IEC 61508 compliance, SIL certification, hardware validation, regulatory approval, or suitability for deployment in a safety-related system without independent hazard analysis, engineering verification, validation, and certification work.
+
 ## Current public demonstrator
 
 ### CPS Derivative Gate v0.1
