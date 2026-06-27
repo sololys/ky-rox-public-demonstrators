@@ -76,7 +76,26 @@ The public demonstrators are relevant to functional-safety questions such as:
 
 These artifacts do not claim IEC 61508 compliance, SIL certification, hardware validation, regulatory approval, or suitability for deployment in a safety-related system without independent hazard analysis, engineering verification, validation, and certification work.
 
-## Current public demonstrator
+## Current public demonstrators
+
+### KY-Gate Admissible Learning Simulator v0.1
+
+An interactive React simulator for admissible learning.
+
+It demonstrates:
+
+- Candidate != Realized Experience
+- RAW -> ESTIMATE -> STRUCT -> GATE type progression
+- ternary Omega / Omega_Q decisions: OPEN, HOLD, KILL
+- HOLD/QHOLD as re-admission discipline, not delayed OPEN
+- Witness Ledger admission for validated experience only
+- QML-style residual leakage monitoring r_A(rho)
+
+Path:
+
+```text
+apps/ky-gate-admissible-learning-simulator/
+```
 
 ### CPS Derivative Gate v0.1
 
