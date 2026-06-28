@@ -72,7 +72,7 @@ def run_scenario(name, risk_profile):
 
 if __name__ == "__main__":
     # 1. Stable Orbit (Uendelig rotasjon innenfor trygg sone)
-    orbit_data = [0.3, 0.4, 0.35, 0.42, 0.38, 0.4, 0.39, 0.41, 0.37, 0.4]
+    orbit_data = [0.30, 0.34, 0.32, 0.35, 0.33, 0.34, 0.32, 0.35, 0.33, 0.34]
     with open("run_001.txt", "w") as f:
         f.write(run_scenario("Stable Orbit", orbit_data))
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     # Vi bruker en lavere minneterskel (1.00) for denne spesifikke testen for å tvinge frem kollaps.
     switch = IntervalKillSwitch(memory_threshold=1.00)
     # Risikoen starter lavt (OPEN), hoper seg opp i HOLD, og kveles til slutt av minnet
-    latent_data = [0.40, 0.45, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85]
+    latent_data = [0.40, 0.45, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85]
     
     lines = ["=== Scenario: Memory Saturation ===", f"{'Step':<5}{'Risk':<8}{'Memory':<8}{'Verdict':<8}{'Reason':<25}", "-" * 60]
     for i, risk in enumerate(latent_data, 1):
