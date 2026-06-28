@@ -9,3 +9,4 @@ Step Risk    Memory  Verdict Reason
 6    0.85    0.78    HOLD    RISK_RE_ADMISSION_REQUIRED
 7    0.85    0.87    HOLD    RISK_RE_ADMISSION_REQUIRED
 8    0.85    0.95    HOLD    RISK_RE_ADMISSION_REQUIRED
+9    0.85    1.02    KILL    MEMORY_SATURATION        
