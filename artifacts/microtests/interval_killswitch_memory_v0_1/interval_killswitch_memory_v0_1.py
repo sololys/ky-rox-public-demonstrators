@@ -92,10 +92,9 @@ if __name__ == "__main__":
         verdict, reason = switch.step(risk)
         lines.append(f"{i:<5}{risk:<8.2f}{switch.memory:<8.2f}{verdict.value:<8}{reason:<25}")
         if verdict == Verdict.KILL:
-            lines.append(">>> PATH TERMINATED BY SAFETY GATE (LATENT_STRESS_COLLAPSE) <<<")
             break
-            
+
     with open("run_003.txt", "w") as f:
         f.write("\n".join(lines) + "\n")
-        
+
     print("Execution complete. Scenarios updated.")
