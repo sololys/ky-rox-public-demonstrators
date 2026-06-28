@@ -129,6 +129,33 @@ Public point:
 Do not wait only for damage level.
 Watch the rate at which consequence becomes irreversible.
 
+Path:
+
+```text
+artifacts/microtests/cps_derivative_gate_v0_1/
+```
+
+### Interval Kill-Switch with Memory v0.1
+
+A deterministic software microtest for fail-closed interval gating with accumulated stress memory.
+
+It demonstrates:
+
+- stable persistence remains admissible
+- boundary drift triggers HOLD
+- accumulated latent stress triggers KILL
+- a trajectory is not rejected merely because it continues
+
+Path:
+
+```text
+artifacts/microtests/interval_killswitch_memory_v0_1/
+```
+
+Claim boundary:
+
+This is a public software demonstrator of gate semantics, not a physical safety validation system, product certification, or production interlock design.
+
 ## What this repository shows
 
 - deterministic microtests
