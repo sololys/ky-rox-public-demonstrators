@@ -1,0 +1,10 @@
+=== Scenario: Boundary Drift ===
+Step Risk    Memory  Verdict Reason                   
+------------------------------------------------------------
+1    0.30    0.00    OPEN    ADMISSIBLE_PERSISTENCE   
+2    0.40    0.02    OPEN    ADMISSIBLE_PERSISTENCE   
+3    0.50    0.04    HOLD    INTERVAL_DRIFT_WARNING   
+4    0.59    0.05    HOLD    INTERVAL_DRIFT_WARNING   
+5    0.68    0.05    HOLD    INTERVAL_DRIFT_WARNING   
+6    0.72    0.07    HOLD    RISK_RE_ADMISSION_REQUIRED
+7    0.75    0.11    HOLD    RISK_RE_ADMISSION_REQUIRED

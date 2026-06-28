@@ -1,0 +1,11 @@
+=== Scenario: Memory Saturation ===
+Step Risk    Memory  Verdict Reason                   
+------------------------------------------------------------
+1    0.40    0.00    OPEN    ADMISSIBLE_PERSISTENCE   
+2    0.45    0.00    OPEN    ADMISSIBLE_PERSISTENCE   
+3    0.85    0.47    HOLD    RISK_RE_ADMISSION_REQUIRED
+4    0.85    0.58    HOLD    RISK_RE_ADMISSION_REQUIRED
+5    0.85    0.69    HOLD    RISK_RE_ADMISSION_REQUIRED
+6    0.85    0.78    HOLD    RISK_RE_ADMISSION_REQUIRED
+7    0.85    0.87    HOLD    RISK_RE_ADMISSION_REQUIRED
+8    0.85    0.95    HOLD    RISK_RE_ADMISSION_REQUIRED

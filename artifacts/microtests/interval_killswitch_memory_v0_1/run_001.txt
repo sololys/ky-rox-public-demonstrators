@@ -1,0 +1,13 @@
+=== Scenario: Stable Orbit ===
+Step Risk    Memory  Verdict Reason                   
+------------------------------------------------------------
+1    0.30    0.00    OPEN    ADMISSIBLE_PERSISTENCE   
+2    0.40    0.02    OPEN    ADMISSIBLE_PERSISTENCE   
+3    0.35    0.02    OPEN    ADMISSIBLE_PERSISTENCE   
+4    0.42    0.02    HOLD    INTERVAL_DRIFT_WARNING   
+5    0.38    0.02    HOLD    INTERVAL_DRIFT_WARNING   
+6    0.40    0.01    OPEN    ADMISSIBLE_PERSISTENCE   
+7    0.39    0.01    OPEN    ADMISSIBLE_PERSISTENCE   
+8    0.41    0.01    OPEN    ADMISSIBLE_PERSISTENCE   
+9    0.37    0.01    OPEN    ADMISSIBLE_PERSISTENCE   
+10   0.40    0.01    OPEN    ADMISSIBLE_PERSISTENCE   
