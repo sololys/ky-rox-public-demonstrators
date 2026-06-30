@@ -202,3 +202,11 @@ Bounded enough to protect the core.
 
 Show the gate.
 Do not show the lock.
+
+## Public Demonstrator Package
+
+See `STATUS_PUBLIC.md` and `public_package_v0_1/` for the current public demonstrator package.
+
+This package presents KY–ROX as a deterministic software demonstrator for candidate/consequence separation, OPEN/HOLD/KILL gating, and witness discipline.
+
+It is not a certified safety system, a production interlock, a hardware validation report, or a claim of physical safety certification.
