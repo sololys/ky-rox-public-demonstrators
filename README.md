@@ -195,6 +195,12 @@ PRODUCT CERTIFICATION
 PRODUCTION SAFETY DESIGN
 HARDWARE ENFORCEMENT PROOF
 
+## Repository structure rule
+
+Small public notes should live under `docs/` as consolidated documents.
+
+Artifact folders should be used only when a demonstrator needs multiple files: code, run logs, manifests, hashes, fixtures, or packaged outputs.
+
 ## Public rule
 
 Public enough to be inspected.
@@ -205,7 +211,7 @@ Do not show the lock.
 
 ## Public Demonstrator Package
 
-See `STATUS_PUBLIC.md` and `public_package_v0_1/` for the current public demonstrator package.
+See `STATUS_PUBLIC.md` and `docs/PUBLIC_PACKAGE_v0_1.md` for the current public demonstrator package.
 
 This package presents KY–ROX as a deterministic software demonstrator for candidate/consequence separation, OPEN/HOLD/KILL gating, and witness discipline.
 
