@@ -216,3 +216,19 @@ See `STATUS_PUBLIC.md` and `docs/PUBLIC_PACKAGE_v0_1.md` for the current public 
 This package presents KY–ROX as a deterministic software demonstrator for candidate/consequence separation, OPEN/HOLD/KILL gating, and witness discipline.
 
 It is not a certified safety system, a production interlock, a hardware validation report, or a claim of physical safety certification.
+
+# KY–ROX Consequence Gate v1.0
+**Deterministic Consequence Selection Layer for Autonomous Systems & AI Action Pipelines.**
+
+## The Core Axiom
+> *Reality is not generated. Reality is admitted.*
+
+As autonomous agents, Large Language Models (LLMs), and complex stochastic control systems transition from passive dashboards to active environments, they introduce a critical vulnerability: **Consequence Leakage**. Traditional architectures lack a fail-closed boundary that separates a generated proposal from a realized, irreversible transaction.
+
+**KY–ROX Consequence Gate** inserts a formal, deterministic execution barrier between the generative engine ($\Phi$) and downstream action layers, enforcing structural admissibility before any state mutation can be treated as historical consequence.
+
+---
+
+## Architectural Stack Map
+
+The runtime sequence guarantees that no candidate proposal can derive authority from its own persistence or optimization score. Every action must traverse a strict, one-way pipeline:
