@@ -1,8 +1,8 @@
 # Public Surface Report v0.4
 
-- Generated UTC: `2026-07-03T12:30:06.001548+00:00`
+- Generated UTC: `2026-07-03T12:30:15.145823+00:00`
 - Root: `/home/sololyset/ky-rox-public-demonstrators`
-- Verdict: **HOLD**
+- Verdict: **OPEN**
 
 ---
 
@@ -12,10 +12,11 @@
 - Required root file present: `CLAIM_LEVELS.md`
 - Manifest files found: 2
 - Runlog-like files found: 7
+- Public-surface Git working tree appears clean.
 
 ## HOLD Findings
 
-- Public-surface Git working tree is not clean.
+- None.
 
 ## KILL Findings
 
@@ -26,13 +27,13 @@
 ## Raw Git Status
 
 ```
-?? scripts/public_surface_verifier_v0_4.py
+CLEAN
 ```
 
 ## Public-Surface Git Status
 
 ```
-?? scripts/public_surface_verifier_v0_4.py
+CLEAN
 ```
 
 ## Manifest Hashes
