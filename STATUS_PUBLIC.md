@@ -20,6 +20,6 @@ This repository demonstrates the structural separation between:
 3. consequence gating
 4. witness logging
 
-It does not claim to be a certified safety system, a production interlock, a hardware design, or a validated physical control product.
+It does not claim to be a safety certification system, a deployment boundary, a hardware design, or a validated physical control product.
 
 The current package is suitable for public review, architectural discussion, software demonstration, and early-stage verification planning.

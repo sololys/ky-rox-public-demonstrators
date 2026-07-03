@@ -12,17 +12,17 @@ The gate has three public outcomes:
 - HOLD: the candidate is not authorized, but not terminated
 - KILL: the candidate violates a boundary and must be stopped
 
-The purpose of this public package is to make the architecture inspectable without exposing private implementation details, patent-sensitive material, hardware thresholds, or production interlock design.
+The purpose of this public package is to make the architecture inspectable without exposing private implementation details, patent-sensitive material, hardware thresholds, or deployment boundary design.
 
 ## What this is not
 
-This public package is not a certified safety system.
+This public package is not a safety certification system.
 
-It is not a production interlock.
+It is not a deployment boundary.
 
 It is not a hardware validation report.
 
-It is not a patent claim.
+It is not a protected claim material.
 
 It is not a claim that the demonstrated software alone can safely control physical infrastructure.
 
@@ -63,7 +63,7 @@ Prepare a short external note for technical reviewers explaining:
 
 ### 5. Later-stage hardware path
 
-Only after software and claim boundaries are stable should the architecture be mapped toward hardware interlock design, lab testing, FPGA/PLC constraints, or certified safety processes.
+Only after software and claim boundaries are stable should the architecture be mapped toward hardware interlock design, lab testing, FPGA/PLC constraints, or safety certification processes.
 
 ## Related files
 

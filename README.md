@@ -61,7 +61,7 @@ It provides public, reproducible demonstrators of the underlying gate logic.
 
 ## Functional safety relevance, not certification
 
-KY-ROX is not presented as a certified safety system, SIL-rated component, or production-ready interlock.
+KY-ROX is not presented as a safety certification system, SIL-rated component, or production-ready interlock.
 
 Its industrial relevance is narrower and more foundational: it demonstrates deterministic gate behavior before a candidate is allowed to become consequence.
 
@@ -154,7 +154,7 @@ artifacts/microtests/interval_killswitch_memory_v0_1/
 
 Claim boundary:
 
-This is a public software demonstrator of gate semantics, not a physical safety validation system, product certification, or production interlock design.
+This is a public software demonstrator of gate semantics, not a physical safety validation system, product certification, or deployment boundary design.
 
 ## What this repository shows
 
@@ -171,8 +171,8 @@ This repository is the public surface, not the protected implementation core.
 
 It does not disclose:
 
-- patent claims
-- production interlock designs
+- protected claim material
+- deployment boundary designs
 - deployment thresholds
 - hardware safety implementation
 - private witness records
@@ -215,7 +215,7 @@ See `STATUS_PUBLIC.md` and `docs/PUBLIC_PACKAGE_v0_1.md` for the current public 
 
 This package presents KY–ROX as a deterministic software demonstrator for candidate/consequence separation, OPEN/HOLD/KILL gating, and witness discipline.
 
-It is not a certified safety system, a production interlock, a hardware validation report, or a claim of physical safety certification.
+It is not a safety certification system, a deployment boundary, a hardware validation report, or a claim of physical safety certification.
 
 # KY–ROX Consequence Gate v1.0
 **Deterministic Consequence Selection Layer for Autonomous Systems & AI Action Pipelines.**
@@ -232,3 +232,30 @@ As autonomous agents, Large Language Models (LLMs), and complex stochastic contr
 ## Architectural Stack Map
 
 The runtime sequence guarantees that no candidate proposal can derive authority from its own persistence or optimization score. Every action must traverse a strict, one-way pipeline:
+
+# KY-ROX Shadow Gate — Release Pathway Demonstrator v0.1
+
+Dette dokumentet definerer de operasjonelle grensene og den konseptuelle arkitekturen for `release_pathway_shadow_gate_v0_1`.
+
+## 1. Definerte Grenser (Strict Boundaries)
+* **Ikke en fysikkmodell:** Systemet verifiserer eller beviser ikke astrofysiske fenomener (ASKAP J1832−0911), molekylærstrukturer (D₂) eller krumningsteori (SICS/UC3). Disse brukes utelukkende som eksterne strukturelle analogier for å illustrere selektive slippveier under geometrisk tvang.
+* [cite_start]**Ikke en finansiell utførelsesmotor:** Demonstratoren simulerer rutinglogikk, men utfører ikke reelle pengetransaksjoner[cite: 684, 790].
+* [cite_start]**Strukturell port-demonstrator:** Fokus ligger eksklusivt på den formelle adskillelsen mellom generert sårbarhet (energi/kandidat til stede) og autorisert realisering (åpen konsekvensport)[cite: 7, 8, 659].
+
+## 2. Portvaktens Formelle Admisjonslogikk
+[cite_start]Konsekvens oppstår ikke fordi systemet har kapasitet eller energi til å handle[cite: 99]. Det må finnes en formelt autorisert og validert slippvei. Porten evaluerer overgangen basert på følgende unike kriteria:
+
+$$OPEN \iff R(c_t) \in R_{\text{allowed}} \land M(c_t) \geq M_{\min} \land S_T(c_t) \leq S_{\max} \land W = \text{READY}$$
+
+* $R(c_t)$: Observert og kartlagt slippvei (Release Pathway).
+* [cite_start]$M(c_t)$: Midtbåndsundertrykkelse (Suppressed Leakage) for å hindre uønsket konsekvenslekkasje[cite: 622].
+* $S_T(c_t)$: Timing-stabilitet (Jitter/Drift-kontroll).
+* $W = \text{READY}$: Witness-forseglingsklarhet. [cite_start]Systemet må beviselig kunne loggføre hendelsen kryptografisk før porten åpnes[cite: 36, 82, 132, 496].
+
+## 3. Konseptuell Bro (External Structural Source)
+Vi integrerer Pickard-Jones' kjerne-tese som en konseptuell oversettelsesnøkkel:
+> "Energy does not become radiance merely because energy is present; energy becomes radiance when structure permits expression."
+
+I KY-ROX betyr dette:
+$$\Phi \neq COMMIT$$
+[cite_start]Generert energi (kandidater) mister sin suverenitet i møte med porten[cite: 5, 141]. [cite_start]Kun strukturelt tillatte og bevitnede kanaler konverteres til realisert virkning[cite: 5, 108, 109].
