@@ -1,6 +1,6 @@
 # Public Surface Report v0.3
 
-- Generated UTC: `2026-07-03T12:28:07.503013+00:00`
+- Generated UTC: `2026-07-03T12:28:18.903746+00:00`
 - Root: `/home/sololyset/ky-rox-public-demonstrators`
 - Verdict: **HOLD**
 
@@ -28,14 +28,12 @@
 ```
 M reports/PUBLIC_SURFACE_REPORT_v0_2.md
 ?? reports/surface_cleaner_backups_v0_1/
-?? scripts/public_surface_verifier_v0_3.py
 ```
 
 ## Public-Surface Git Status
 
 ```
 M reports/PUBLIC_SURFACE_REPORT_v0_2.md
-?? scripts/public_surface_verifier_v0_3.py
 ```
 
 ## Manifest Hashes
