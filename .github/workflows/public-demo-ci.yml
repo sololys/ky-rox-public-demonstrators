@@ -29,3 +29,8 @@ jobs:
         run: |
           cd demos/public_qr_hash_gate_v0_1
           python3 test_public_qr_hash_gate.py
+
+      - name: Render terminal art artifact smoke frame
+        run: |
+          cd demos/public_qr_hash_gate_v0_1
+          python3 terminal_art_commercial_boundary_v0_1.py --plain --no-sleep --frames 1
