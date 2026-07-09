@@ -50,7 +50,13 @@ This repository contains reference software layouts for checking boundaries acro
 
 ---
 
-### 4. Target Deployment Contexts
+### 4. Public Demonstrators
+
+* `demos/public_qr_hash_gate_v0_1/` — claim-controlled QR/payload hash gate: payloads only point; hash match authorizes `OPEN`. Missing targets remain `HOLD`; mismatches become `KILL`.
+
+---
+
+### 5. Target Deployment Contexts
 Designed for cyber-physical and autonomous environments where computation cannot be allowed to drift into unsafe physical reality:
 * Industrial automation & cyber-physical control loops.
 * Autonomous tactical loops and robotic systems.
