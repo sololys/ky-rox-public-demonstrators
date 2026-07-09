@@ -1,0 +1,31 @@
+name: Public Demo CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-qr-hash-gate:
+    name: Public QR Hash Gate / Python 3.11
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run public QR hash gate tests
+        run: |
+          cd demos/public_qr_hash_gate_v0_1
+          python3 test_public_qr_hash_gate.py
