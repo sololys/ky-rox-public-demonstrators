@@ -4,65 +4,117 @@
 
 A generated candidate must never become a realized consequence merely because a model, controller, sensor, pipeline, or actuator can continue. Computational momentum does not equal physical authority.
 
-This repository serves as the public showroom and deterministic software surface for the **KY-ROX Realization Grammar Architecture**. It isolates speculative execution from state mutability to answer one uncompromising structural question: *When should a candidate be allowed to become consequence?*
+This repository is the public showroom and deterministic software surface for the **KY-ROX Realization Grammar Architecture**. It isolates speculative execution from state mutability to answer one structural question:
+
+> When may a candidate become an authorized software result, and what additional boundary is required before irreversible consequence?
 
 ---
 
-### ─── The Structural Invariant ───
+## The structural invariant
+
 > $$\text{Candidate} \neq \text{Consequence}$$
-> 
-> *The resistance of the gate is invariant to the velocity, volume, or confidence of the generator. Admission requires explicit, step-by-step type-progression and authorization; it can never be achieved by omission, timeout, or computational continuation.*
+
+The resistance of the gate is invariant to the velocity, volume, or confidence of the generator. Admission requires explicit type progression and authorization; it cannot be achieved by omission, timeout, or computational continuation.
 
 ---
 
-### 1. The Core Architecture Loop
-Every transition in this architecture is governed by the strict mathematical filter:
+## 1. Core architecture loop
+
+Every evaluated transition follows:
 
 $$x_{t+1}=\Omega(\Pi_K(\Phi(x_t)))$$
 
-* **$\Phi$ (Generate):** Fail-open exploration layer. Handles noisy data, high-dimensional proposals, and continuous controller loops.
-* **$\Pi_K$ (Project):** Strict kernel projection. Validates structure, type, and computes the projection residual $\Delta_K(x) = \Phi(x) - \Pi_K(\Phi(x))$.
-* **$\Omega$ (Gate):** Deterministic evaluation interface (`OPEN` / `HOLD` / `KILL`).
+- **$\Phi$ — Generate:** explores noisy data, proposals, and possible trajectories.
+- **$\Pi_K$ — Project:** validates structure, type, boundaries, and invariants.
+- **$\Omega$ — Gate:** returns the deterministic decision `OPEN`, `HOLD`, or `KILL`.
+
+```text
+OPEN = passage to a bounded software result
+HOLD = preserved candidate requiring re-admission
+KILL = rejected candidate / no passage
+```
+
+`HOLD` is never delayed `OPEN`.
 
 ---
 
-### 2. Immutable Node Lifecycle (Type-Progression)
-Nodene har en ufravikelig livssyklus. Enhver snarvei eller kortslutning (f.eks. direkte fra RAW til STRUCT utenom ESTIMATE) tolkes som et ontologisk typebrudd og utløser øyeblikkelig terminering til en fail-closed terminal tilstand ($\bot$).
+## 2. Immutable type progression
 
-$$\text{RAW} \longrightarrow \text{ESTIMATE} \longrightarrow \text{STRUCT} \longrightarrow \text{VIABILITY} \longrightarrow \text{COMMITTED}$$
+```text
+RAW
+→ ESTIMATE
+→ STRUCT
+→ VIABILITY
+→ SIM_AUTHORIZED
+→ explicit COMMIT boundary
+→ WITNESS
+```
 
-* **RAW $(\bullet)$:** Raw event, player/operator input, or telemetry ingress.
-* **ESTIMATE $(\diamond)$:** Speculative generation and potential state trajectory.
-* **STRUCT $(\Box)$:** Validated data structures, explicit typing, and hash checks.
-* **VIABILITY $(\bigcirc)$:** Evaluation against physical constraints, safety bounds, or environment lore.
-* **COMMITTED $(\Theta)$:** Admitted transition permanently written to the *Witness Log*.
+- **RAW:** event, operator input, telemetry, or proposal ingress.
+- **ESTIMATE:** speculative generation and candidate trajectory.
+- **STRUCT:** validated types, data structures, and integrity checks.
+- **VIABILITY:** bounded evaluation against declared constraints.
+- **SIM_AUTHORIZED:** permission for an explicit, bounded software result.
+- **COMMITTED:** used only when a separately authorized irreversible transition actually occurs.
+- **WITNESS:** downstream history of the evaluated or committed event.
 
----
+Any shortcut across a required stage is a type violation and must fail closed.
 
-### 3. Demonstrator Scopes Included
-This repository contains reference software layouts for checking boundaries across multiple domains:
-
-* **Candidate / Consequence Separation:** Decoupling of state proposals from core execution surfaces.
-* **Explicit Gate Semantics:** Programmatic realization of `OPEN` (commit), `HOLD` (freeze/blueprint), and `KILL` (lock/collapse).
-* **Fail-Closed Ingress Control:** Immediate drop to a zero-stimuli or zero-action safe state ($\bot$) if boundaries are breached.
-* **Witness Discipline:** Hash-chained logging preventing historical data from retroactively altering generator permissions.
-* **Deterministic Run Validation:** Manifest verification and cryptographic hash checks for reproducible execution logs.
-
----
-
-### 4. Target Deployment Contexts
-Designed for cyber-physical and autonomous environments where computation cannot be allowed to drift into unsafe physical reality:
-* Industrial automation & cyber-physical control loops.
-* Autonomous tactical loops and robotic systems.
-* Critical grid infrastructure and functional safety boundaries.
-* AI-assisted action pipelines requiring runtime governance.
+```text
+OPEN != COMMITTED
+SIM_AUTHORIZED != PHYSICAL_ACTION
+WITNESS != AUTHORITY
+```
 
 ---
 
-### Boundaries of the Claim
-* **Not** a safety-certified component.
-* **Not** a production interlock.
-* **Not** hardware validation (see E-TOR specifications for physical hardware locks).
+## 3. Demonstrator scopes
 
-* **Fail-Open Exploration.**
-* **Fail-Closed Consequence.**
+This repository contains public reference layouts for:
+
+- candidate/consequence separation;
+- deterministic `OPEN/HOLD/KILL` gates;
+- fail-closed input handling;
+- bounded simulation results;
+- hash-linked trace and witness principles;
+- deterministic replay, manifests, and reproducible run logs;
+- read-only terminal observability surfaces.
+
+The public demonstrators do not expose protected interlock details, private thresholds, production witness internals, or unpublished core algorithms.
+
+---
+
+## 4. Intended research contexts
+
+The architecture is relevant to systems where computation must not silently become external action, including:
+
+- industrial and cyber-physical control research;
+- robotics and autonomous-system simulation;
+- critical-infrastructure governance models;
+- AI-assisted action pipelines;
+- developer tooling for typed authorization and audit.
+
+---
+
+## Claim and authority boundary
+
+These artifacts are:
+
+- deterministic software demonstrators;
+- architectural and research instruments;
+- local test surfaces.
+
+They are not:
+
+- safety-certified components;
+- production interlocks;
+- deployed hardware controllers;
+- empirical validation of new physics;
+- autonomous physical authority.
+
+```text
+FAIL_OPEN_EXPLORATION=ALLOWED
+FAIL_CLOSED_CONSEQUENCE=REQUIRED
+NO_COMMIT_BY_DEFAULT=TRUE
+PHYSICAL_AUTHORITY=NONE
+```
