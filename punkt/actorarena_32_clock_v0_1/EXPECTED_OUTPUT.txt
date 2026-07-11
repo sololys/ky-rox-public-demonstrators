@@ -1,0 +1,7 @@
+R-OPEN: position=01 decision=OPEN changed=true witnessed=true reason=admitted
+R-HOLD: position=02 decision=HOLD changed=false witnessed=false reason=re_admission_required
+R-KILL: position=03 decision=KILL changed=false witnessed=false reason=integrity_failure
+R-REJECT: position=04 decision=REJECTED changed=false witnessed=false reason=zero_window_miss
+STATE_EVENTS=1
+WITNESS_EVENTS=1
+FINAL_SEAL=ACTORARENA_32_CLOCK_V0_1_PASS
