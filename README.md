@@ -80,6 +80,12 @@ Material crossing this boundary does not merge here.
 See [PUBLIC_BOUNDARY.md](PUBLIC_BOUNDARY.md), [STATUS_PUBLIC.md](STATUS_PUBLIC.md),
 and [SECURITY.md](SECURITY.md).
 
+## ζβ // Persistence Without Recurrence
+
+The [ζβ terminal artwork](punkt/zeta_persistence_v0_1/) turns a locked
+`71 / 8 / 2 / 190` document fingerprint into a deterministic, non-closing
+spectral field with reproducible fixed-frame probes.
+
 ## Scope
 
 These artifacts are research and engineering demonstrations.
