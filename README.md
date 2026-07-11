@@ -80,6 +80,13 @@ Material crossing this boundary does not merge here.
 See [PUBLIC_BOUNDARY.md](PUBLIC_BOUNDARY.md), [STATUS_PUBLIC.md](STATUS_PUBLIC.md),
 and [SECURITY.md](SECURITY.md).
 
+## ActorArena 32 Clock
+
+The bounded [ActorArena 32 Clock v0.1](punkt/actorarena_32_clock_v0_1/)
+demonstrates a 32-position zero-window request geometry with terminal rejection,
+fail-closed `OPEN / HOLD / KILL` outcomes, and a downstream append-only witness
+for realized `OPEN` events.
+
 ## Scope
 
 These artifacts are research and engineering demonstrations.
