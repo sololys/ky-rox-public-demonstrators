@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1600" viewBox="0 0 1600 1600" role="img" aria-labelledby="title desc">
+  <title id="title">ActorArena 32-position fail-closed clock diagram</title>
+  <desc id="desc">Thirty-two actor positions surround an admissibility and Omega decision pipeline with OPEN, HOLD, KILL, rejected-request, and append-only witness routes.</desc>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="72%">
+      <stop offset="0" stop-color="#07345a"/>
+      <stop offset="0.58" stop-color="#032747"/>
+      <stop offset="1" stop-color="#02182d"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#78c8e8" stroke-opacity=".075" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000814" flood-opacity=".42"/>
+    </filter>
+    <filter id="glowCyan" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrowIvory" markerWidth="14" markerHeight="14" refX="12" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0L12 6L0 12Z" fill="#f4eadb"/>
+    </marker>
+    <marker id="arrowCyan" markerWidth="14" markerHeight="14" refX="12" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0L12 6L0 12Z" fill="#55d6e8"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="14" markerHeight="14" refX="12" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0L12 6L0 12Z" fill="#ff564f"/>
+    </marker>
+    <style>
+      .ivory{fill:#f4eadb}.muted{fill:#b6cedb}.cyan{fill:#55d6e8}.amber{fill:#ffb12f}.red{fill:#ff564f}
+      .stroke{fill:none;stroke:#f4eadb}.thin{stroke-width:2}.mid{stroke-width:4}.heavy{stroke-width:7}
+      .label{font-family:Inter,Arial,sans-serif;font-weight:800;letter-spacing:.8px}
+      .mono{font-family:"IBM Plex Mono","Fira Code",monospace;font-weight:700}
+      .box{fill:#032b4b;stroke:#f4eadb;stroke-width:4;rx:20}
+      .small{font-size:23px}.body{font-size:28px}.heading{font-size:38px}.number{font-size:31px}
+    </style>
+  </defs>
+
+  <rect width="1600" height="1600" fill="url(#bg)"/>
+  <rect width="1600" height="1600" fill="url(#grid)"/>
+  <rect x="18" y="18" width="1564" height="1564" rx="20" fill="none" stroke="#f4eadb" stroke-width="3" opacity=".9"/>
+
+  <text x="54" y="82" class="ivory label" font-size="54">ActorArena</text>
+  <path d="M54 101H362" class="stroke mid"/>
+  <text x="1546" y="78" text-anchor="end" class="muted mono small">PUBLIC ARCHITECTURE / v1.0</text>
+
+  <!-- Clock face -->
+  <circle cx="800" cy="790" r="550" fill="#02213b" fill-opacity=".36" stroke="#f4eadb" stroke-width="5"/>
+  <circle cx="800" cy="790" r="480" fill="#031d35" fill-opacity=".6" stroke="#f4eadb" stroke-width="4"/>
+  <circle cx="800" cy="790" r="450" fill="none" stroke="#93bfd0" stroke-width="2" stroke-dasharray="12 12" opacity=".8"/>
+
+  <!-- 32 deterministic clock positions; 1 is top, increasing clockwise -->
+  <g class="ivory mono number" text-anchor="middle" dominant-baseline="middle">
+    <g transform="rotate(0 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275">1</text></g>
+    <g transform="rotate(11.25 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-11.25 800 275)">2</text></g>
+    <g transform="rotate(22.5 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-22.5 800 275)">3</text></g>
+    <g transform="rotate(33.75 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-33.75 800 275)">4</text></g>
+    <g transform="rotate(45 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-45 800 275)">5</text></g>
+    <g transform="rotate(56.25 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-56.25 800 275)">6</text></g>
+    <g transform="rotate(67.5 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-67.5 800 275)">7</text></g>
+    <g transform="rotate(78.75 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-78.75 800 275)">8</text></g>
+    <g transform="rotate(90 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-90 800 275)">9</text></g>
+    <g transform="rotate(101.25 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-101.25 800 275)">10</text></g>
+    <g transform="rotate(112.5 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-112.5 800 275)">11</text></g>
+    <g transform="rotate(123.75 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-123.75 800 275)">12</text></g>
+    <g transform="rotate(135 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-135 800 275)">13</text></g>
+    <g transform="rotate(146.25 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-146.25 800 275)">14</text></g>
+    <g transform="rotate(157.5 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-157.5 800 275)">15</text></g>
+    <g transform="rotate(168.75 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-168.75 800 275)">16</text></g>
+    <g transform="rotate(180 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-180 800 275)">17</text></g>
+    <g transform="rotate(191.25 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-191.25 800 275)">18</text></g>
+    <g transform="rotate(202.5 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-202.5 800 275)">19</text></g>
+    <g transform="rotate(213.75 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-213.75 800 275)">20</text></g>
+    <g transform="rotate(225 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-225 800 275)">21</text></g>
+    <g transform="rotate(236.25 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-236.25 800 275)">22</text></g>
+    <g transform="rotate(247.5 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-247.5 800 275)">23</text></g>
+    <g transform="rotate(258.75 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-258.75 800 275)">24</text></g>
+    <g transform="rotate(270 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-270 800 275)">25</text></g>
+    <g transform="rotate(281.25 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-281.25 800 275)">26</text></g>
+    <g transform="rotate(292.5 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-292.5 800 275)">27</text></g>
+    <g transform="rotate(303.75 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-303.75 800 275)">28</text></g>
+    <g transform="rotate(315 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-315 800 275)">29</text></g>
+    <g transform="rotate(326.25 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-326.25 800 275)">30</text></g>
+    <g transform="rotate(337.5 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-337.5 800 275)">31</text></g>
+    <g transform="rotate(348.75 800 790)"><path d="M800 240V310" class="stroke thin"/><text x="800" y="275" transform="rotate(-348.75 800 275)">32</text></g>
+  </g>
+
+  <!-- Public decision pipeline -->
+  <g>
+    <rect x="310" y="665" width="205" height="250" class="box"/>
+    <rect x="550" y="665" width="205" height="250" class="box"/>
+    <rect x="790" y="665" width="205" height="250" class="box"/>
+    <rect x="1030" y="625" width="225" height="330" class="box"/>
+  </g>
+
+  <text x="412" y="710" text-anchor="middle" class="muted label small">ACTOR</text>
+  <text x="412" y="741" text-anchor="middle" class="ivory label small">REQUESTS</text>
+  <g transform="translate(412 801)" class="stroke mid">
+    <circle r="26"/><path d="M-43 72c5-30 20-45 43-45s38 15 43 45"/>
+  </g>
+
+  <text x="652" y="710" text-anchor="middle" class="ivory label small">ADMISSIBILITY</text>
+  <path d="M652 756l48 18v40c0 39-20 67-48 83-28-16-48-44-48-83v-40z" class="stroke mid"/>
+  <path d="M626 814l18 18 36-43" fill="none" stroke="#55d6e8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="892" y="710" text-anchor="middle" class="ivory label small">Ω DECISION</text>
+  <circle cx="892" cy="817" r="68" fill="none" stroke="#f4eadb" stroke-width="5"/>
+  <text x="892" y="846" text-anchor="middle" class="ivory" font-family="Georgia,serif" font-size="92">Ω</text>
+
+  <g class="label body">
+    <path d="M1030 735H1255" stroke="#55d6e8" stroke-width="3"/>
+    <path d="M1030 845H1255" stroke="#f4eadb" stroke-width="3"/>
+    <circle cx="1080" cy="690" r="26" fill="none" stroke="#55d6e8" stroke-width="5"/>
+    <path d="M1067 690l10 11 19-23" fill="none" stroke="#55d6e8" stroke-width="5" stroke-linecap="round"/>
+    <text x="1125" y="700" class="cyan">OPEN</text>
+    <circle cx="1080" cy="790" r="26" fill="none" stroke="#ffb12f" stroke-width="5"/>
+    <path d="M1080 773v18l13 9" fill="none" stroke="#ffb12f" stroke-width="5" stroke-linecap="round"/>
+    <text x="1125" y="800" class="amber">HOLD</text>
+    <circle cx="1080" cy="900" r="26" fill="none" stroke="#ff564f" stroke-width="5"/>
+    <path d="M1068 888l24 24m0-24l-24 24" fill="none" stroke="#ff564f" stroke-width="5" stroke-linecap="round"/>
+    <text x="1125" y="910" class="red">KILL</text>
+  </g>
+
+  <g fill="none" stroke-linecap="round">
+    <path d="M222 720H275Q300 720 300 745V790H335" stroke="#f4eadb" stroke-width="6" marker-end="url(#arrowIvory)"/>
+    <path d="M515 790H542" stroke="#f4eadb" stroke-width="6" marker-end="url(#arrowIvory)"/>
+    <path d="M755 790H782" stroke="#f4eadb" stroke-width="6" marker-end="url(#arrowIvory)"/>
+    <path d="M995 790H1022" stroke="#f4eadb" stroke-width="6" marker-end="url(#arrowIvory)"/>
+  </g>
+
+  <!-- External request label -->
+  <rect x="34" y="632" width="188" height="176" rx="18" fill="#032b4b" stroke="#f4eadb" stroke-width="4"/>
+  <text x="128" y="686" text-anchor="middle" class="muted label small">INCOMING</text>
+  <text x="128" y="721" text-anchor="middle" class="ivory label small">ACTOR</text>
+  <text x="128" y="756" text-anchor="middle" class="ivory label small">REQUESTS</text>
+
+  <!-- Rejected path: terminal, not a route back into the clock -->
+  <path d="M652 915V1080Q652 1135 595 1135H244" fill="none" stroke="#ff564f" stroke-width="5" stroke-dasharray="12 10" marker-end="url(#arrowRed)"/>
+  <rect x="34" y="1035" width="210" height="200" rx="18" fill="#2b2030" stroke="#ff564f" stroke-width="4" stroke-dasharray="12 9"/>
+  <text x="139" y="1092" text-anchor="middle" class="red label small">REJECTED</text>
+  <text x="139" y="1126" text-anchor="middle" class="ivory label small">REQUESTS</text>
+  <circle cx="139" cy="1180" r="28" fill="none" stroke="#ff564f" stroke-width="5"/>
+  <path d="M125 1166l28 28m0-28l-28 28" stroke="#ff564f" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Fail-closed route -->
+  <path d="M892 915V1070" fill="none" stroke="#f4eadb" stroke-width="4" stroke-dasharray="10 9" marker-end="url(#arrowIvory)"/>
+  <rect x="775" y="1080" width="234" height="155" rx="18" fill="#032b4b" stroke="#f4eadb" stroke-width="4"/>
+  <text x="892" y="1128" text-anchor="middle" class="ivory label small">FAIL-CLOSED</text>
+  <path d="M859 1170h66v50h-66zM871 1170v-16c0-29 42-29 42 0v16" fill="none" stroke="#f4eadb" stroke-width="5"/>
+
+  <!-- Downstream witness only -->
+  <path d="M1255 690H1285V640H1448V510" fill="none" stroke="#55d6e8" stroke-width="5" marker-end="url(#arrowCyan)"/>
+  <rect x="1360" y="240" width="190" height="265" rx="20" fill="#032b4b" stroke="#f4eadb" stroke-width="4"/>
+  <text x="1455" y="285" text-anchor="middle" class="ivory label" font-size="20">AUDIT &amp; WITNESS</text>
+  <path d="M1410 322h65l25 25v78h-90zM1475 322v25h25" fill="none" stroke="#f4eadb" stroke-width="4"/>
+  <path d="M1428 365h52m-52 25h52" stroke="#55d6e8" stroke-width="4"/>
+  <text x="1455" y="458" text-anchor="middle" class="muted mono" font-size="16">APPEND-ONLY</text>
+  <text x="1455" y="481" text-anchor="middle" class="muted mono" font-size="16">HASH LEDGER</text>
+
+  <!-- Caption -->
+  <rect x="48" y="1500" width="1504" height="64" rx="14" fill="#032b4b" stroke="#f4eadb" stroke-width="3"/>
+  <text x="800" y="1543" text-anchor="middle" class="ivory label" font-size="30">ACTORARENA — 32-POSITION ZERO-WINDOW FAIL-CLOSED CLOCK</text>
+</svg>
