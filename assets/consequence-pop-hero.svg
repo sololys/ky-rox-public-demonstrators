@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">OMEGA CONSEQUENCE POP — KY-ROX Public Demonstrators</title>
+  <desc id="desc">A vivid but controlled pop-art gate: candidate paths converge on OPEN, HOLD, and KILL decisions.</desc>
+  <rect width="1200" height="300" rx="28" fill="#0a0b0f"/>
+  <g opacity="0.95">
+    <circle cx="1005" cy="66" r="88" fill="#ff3ca6"/>
+    <circle cx="1116" cy="244" r="48" fill="#ffd83d"/>
+    <circle cx="906" cy="245" r="33" fill="#29f0d0"/>
+  </g>
+  <path d="M62 242 C220 242 255 75 438 75 S660 242 820 242" fill="none" stroke="#29f0d0" stroke-width="8"/>
+  <path d="M62 242 C240 242 330 142 478 142 S666 242 820 242" fill="none" stroke="#ffd83d" stroke-width="5" stroke-dasharray="12 13"/>
+  <path d="M62 242 C274 242 355 198 515 198 S690 242 820 242" fill="none" stroke="#ff3ca6" stroke-width="4" stroke-dasharray="4 13"/>
+  <rect x="52" y="42" width="770" height="128" rx="18" fill="#0a0b0f" stroke="#f7f7f2" stroke-width="2"/>
+  <text x="82" y="92" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="50" font-weight="900" fill="#f7f7f2">Ω // CONSEQUENCE POP</text>
+  <text x="85" y="135" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21" font-weight="800" fill="#29f0d0">RUN THE GATE / SEE THE DECISION / VERIFY THE TRACE</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="900" text-anchor="middle">
+    <rect x="842" y="190" width="103" height="56" rx="10" fill="#29f0d0"/>
+    <text x="893" y="225" fill="#0a0b0f">OPEN</text>
+    <rect x="958" y="190" width="103" height="56" rx="10" fill="#ffd83d"/>
+    <text x="1009" y="225" fill="#0a0b0f">HOLD</text>
+    <rect x="1074" y="190" width="82" height="56" rx="10" fill="#ff3ca6"/>
+    <text x="1115" y="225" fill="#0a0b0f">KILL</text>
+  </g>
+</svg>
