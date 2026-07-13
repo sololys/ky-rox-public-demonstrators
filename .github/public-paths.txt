@@ -6,6 +6,12 @@ PUBLIC_BOUNDARY.md
 README.md
 SECURITY.md
 STATUS_PUBLIC.md
+artifacts/microtests/kernel_drift_observable_v0_1/CHECKSUMS.sha256
+artifacts/microtests/kernel_drift_observable_v0_1/EXPECTED_OUTPUT.txt
+artifacts/microtests/kernel_drift_observable_v0_1/FIXTURE.json
+artifacts/microtests/kernel_drift_observable_v0_1/SURFACE.md
+artifacts/microtests/kernel_drift_observable_v0_1/kernel_drift.py
+artifacts/microtests/kernel_drift_observable_v0_1/test_kernel_drift.py
 bane/BOUNDARY.md
 punkt/contracts/candidate-not-consequence.md
 punkt/contracts/claim-levels.md

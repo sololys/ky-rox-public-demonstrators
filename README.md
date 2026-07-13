@@ -47,6 +47,12 @@ A public branch is still public. Draft status does not create confidentiality.
 A demonstrator may expose `OPEN`, `HOLD`, or `KILL` as bounded software outcomes.
 These outcomes do not grant physical, operational, financial, or safety authority.
 
+## Public microtests
+
+- [Kernel Drift Observable v0.1](artifacts/microtests/kernel_drift_observable_v0_1/SURFACE.md)
+  — deterministic synthetic measurement; measurement `OPEN`, research claim `HOLD`,
+  physical and operational authority `NONE`.
+
 ## Reproduce a release
 
 1. Read the artifact's `SURFACE.md`.

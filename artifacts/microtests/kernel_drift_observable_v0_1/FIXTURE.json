@@ -1,0 +1,15 @@
+{
+  "fixture_id": "synthetic_relational_deformation_v0_1",
+  "reference_features": [
+    [1.0, 0.0],
+    [0.0, 1.0],
+    [1.0, 1.0],
+    [0.5, 0.5]
+  ],
+  "observed_features": [
+    [1.0, 0.0],
+    [0.05, 1.0],
+    [1.0, 0.95],
+    [0.55, 0.45]
+  ]
+}
