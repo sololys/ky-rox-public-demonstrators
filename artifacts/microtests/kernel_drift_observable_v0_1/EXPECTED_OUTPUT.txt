@@ -1,0 +1,11 @@
+{
+  "claim": "Synthetic diagnostic measurement only",
+  "claim_status": "HOLD",
+  "kernel_drift": 0.04034053161,
+  "measurement_status": "OPEN",
+  "operational_authority": "NONE",
+  "physical_authority": "NONE",
+  "raw_state_drift": 0.047140452079,
+  "reason": "BENCHMARK_ADVANTAGE_NOT_ESTABLISHED_BY_SYNTHETIC_FIXTURE",
+  "status": "HOLD"
+}
