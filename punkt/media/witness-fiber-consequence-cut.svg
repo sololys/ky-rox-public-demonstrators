@@ -9,10 +9,8 @@
   <text x="78" y="82" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="42" font-weight="900" fill="#f7f7f2">WITNESS FIBER COLLAPSE</text>
   <text x="80" y="119" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" font-weight="800" fill="#29f0d0">PUBLIC TRACE / ADMISSION / NOTHING CROSSES SILENTLY</text>
 
-  <!-- Decorative fixed points -->
+  <!-- Decorative fixed point -->
   <circle cx="1060" cy="64" r="76" fill="#ff3ca6" opacity="0.95"/>
-  <circle cx="1140" cy="274" r="34" fill="#ffd83d" opacity="0.95"/>
-  <circle cx="936" cy="278" r="25" fill="#29f0d0" opacity="0.95"/>
 
   <!-- Synthetic witness fibers -->
   <path d="M62 252 C220 252 284 172 430 172 S600 230 690 230" fill="none" stroke="#29f0d0" stroke-width="8" stroke-linecap="round"/>
@@ -54,5 +52,6 @@
   </g>
 
   <text x="999" y="164" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="800" fill="#f7f7f2">CANDIDATE != CONSEQUENCE</text>
-  <text x="999" y="263" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700" fill="#8b949e">STATIC PUBLIC VISUALIZATION / NO PHYSICAL AUTHORITY</text>
+  <text x="999" y="276" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700" fill="#8b949e">STATIC PUBLIC VISUALIZATION</text>
+  <text x="999" y="296" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700" fill="#8b949e">NO PHYSICAL AUTHORITY</text>
 </svg>
