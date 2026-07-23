@@ -112,15 +112,14 @@ def main() -> int:
             [sys.executable, str(script_path)],
             cwd=microtest_dir,
             capture_output=True,
-            text=True,
             check=True
         )
-        actual_out = res.stdout.replace("\r\n", "\n")
-        expected_out = expected_output_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+        actual_out = res.stdout
+        expected_out = expected_output_path.read_bytes()
 
         if actual_out != expected_out:
             print("MICROTEST_GATE=KILL")
-            print("- Output mismatch against EXPECTED_OUTPUT.txt")
+            print("- Byte mismatch against EXPECTED_OUTPUT.txt")
             return 2
     except Exception as e:
         print("MICROTEST_GATE=KILL")
