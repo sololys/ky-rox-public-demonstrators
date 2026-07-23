@@ -99,9 +99,72 @@ def main() -> int:
             print(f"- {finding}")
         return 2
 
+    # Microtest verification for kernel_drift_observable_v0_1
+    microtest_dir = ROOT / "artifacts" / "microtests" / "kernel_drift_observable_v0_1"
+    script_path = microtest_dir / "kernel_drift.py"
+    expected_output_path = microtest_dir / "EXPECTED_OUTPUT.txt"
+    test_script_path = microtest_dir / "test_kernel_drift.py"
+    checksums_path = microtest_dir / "CHECKSUMS.sha256"
+
+    # 1. Byte-for-byte output comparison
+    try:
+        res = subprocess.run(
+            [sys.executable, str(script_path)],
+            cwd=microtest_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        actual_out = res.stdout.replace("\r\n", "\n")
+        expected_out = expected_output_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+
+        if actual_out != expected_out:
+            print("MICROTEST_GATE=KILL")
+            print("- Output mismatch against EXPECTED_OUTPUT.txt")
+            return 2
+    except Exception as e:
+        print("MICROTEST_GATE=KILL")
+        print(f"- Execution failed: {e}")
+        return 2
+
+    # 2. Run unit tests (6 tests)
+    try:
+        res_test = subprocess.run(
+            [sys.executable, "-m", "unittest", "-v", "test_kernel_drift.py"],
+            cwd=microtest_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except Exception as e:
+        print("MICROTEST_GATE=KILL")
+        print(f"- Unit tests failed: {e}")
+        return 2
+
+    # 3. Verify CHECKSUMS.sha256
+    try:
+        res_sha = subprocess.run(
+            ["sha256sum", "-c", "CHECKSUMS.sha256"],
+            cwd=microtest_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except Exception as e:
+        print("MICROTEST_GATE=KILL")
+        print(f"- CHECKSUMS.sha256 check failed: {e}")
+        return 2
+
     print("PUBLIC_TREE_GATE=PASS")
+    print("MICROTEST_GATE=PASS")
     print(f"TRACKED_FILES={len(tracked)}")
     print("SCOPE=EXACT_CHECKED_TREE_ONLY")
+    print("RELEASE_GATE_STATUS=OPEN")
+    print("ARTIFACT_STATUS=RELEASE_CANDIDATE")
+    print("CLAIM_STATUS=HOLD")
+    print("REPOSITORY_STATUS=HOLD")
+    print("PHYSICAL_AUTHORITY=NONE")
+    print("OPERATIONAL_AUTHORITY=NONE")
     return 0
 
 
