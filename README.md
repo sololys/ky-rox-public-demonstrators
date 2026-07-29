@@ -19,7 +19,11 @@ This repository contains small, inspectable software demonstrations of one publi
 principle:
 
 > A computed candidate does not become a consequence through momentum, confidence,
-> age, or repetition.
+> age, repetition, or a software verdict.
+
+Candidate generation and realized consequence are distinct states. A demonstrator
+may generate or evaluate a candidate, but it grants no physical, operational,
+financial, safety, or production authority.
 
 Every released demonstrator must provide:
 
@@ -45,7 +49,12 @@ A public branch is still public. Draft status does not create confidentiality.
 ## Public verdicts
 
 A demonstrator may expose `OPEN`, `HOLD`, or `KILL` as bounded software outcomes.
-These outcomes do not grant physical, operational, financial, or safety authority.
+These outcomes do not grant physical, operational, financial, safety, or production
+authority.
+
+The canonical public claim contract is
+[punkt/contracts/claim-levels.md](punkt/contracts/claim-levels.md). The current
+repository state is recorded in [STATUS_PUBLIC.md](STATUS_PUBLIC.md).
 
 ## Public microtests
 
@@ -84,7 +93,8 @@ It must never contain:
 Material crossing this boundary does not merge here.
 
 See [PUBLIC_BOUNDARY.md](PUBLIC_BOUNDARY.md), [STATUS_PUBLIC.md](STATUS_PUBLIC.md),
-and [SECURITY.md](SECURITY.md).
+[punkt/contracts/claim-levels.md](punkt/contracts/claim-levels.md), and
+[SECURITY.md](SECURITY.md).
 
 ## Scope
 
