@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="punkt/media/public-consequence-cut.svg" alt="KY-ROX Public Demonstrators" width="100%" />
+  <img src="punkt/media/witness-fiber-consequence-cut.svg" alt="Witness Fiber Consequence Cut" width="100%" />
 </p>
 
 <h1 align="center">KY-ROX Public Demonstrators</h1>
