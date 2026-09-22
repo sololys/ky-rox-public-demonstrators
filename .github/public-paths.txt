@@ -2,6 +2,7 @@
 .github/public-paths.txt
 .github/workflows/public-surface-gate.yml
 .gitignore
+DEMO_ATTEST_MAL.md
 PUBLIC_BOUNDARY.md
 README.md
 SECURITY.md
@@ -17,6 +18,8 @@ punkt/contracts/candidate-not-consequence.md
 punkt/contracts/claim-levels.md
 punkt/contracts/decision-vocabulary.md
 punkt/media/public-consequence-cut.svg
+punkt/media/witness-fiber-consequence-cut.svg
 record/README.md
 released/README.md
+run_demo.py
 tools/verify_public_surface.py
