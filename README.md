@@ -9,10 +9,6 @@
   Bounded software demonstrations. Reproducible behavior. No physical authority.
 </p>
 
-> **STATUS: HOLD** — This tree is a bounded public-surface candidate. Repository-wide
-> containment remains incomplete until historical references and external copies have
-> been reviewed separately.
-
 ## 🏛️ Epistemic Foundation: Decoupling Capability from Authority
 
 > *The architecture of the KY-ROX demonstrator is predicated upon a singular, uncompromising restriction: the generation of a computational candidate must never be mistaken for a realized consequence. Software possesses an inherent, dangerous tendency to assume that high predictive confidence and rapid execution inherently confer operational authority. To counter this, the framework establishes an absolute epistemic boundary, ensuring that a simulated outcome remains entirely isolated from physical execution. The demonstrator serves as a structural proof of this separation, operating as a deterministic engine where mathematical capability and operational authority are permanently decoupled.*
