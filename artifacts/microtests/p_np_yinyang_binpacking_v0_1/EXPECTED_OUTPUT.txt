@@ -1,0 +1,31 @@
+{
+  "capacity": 8,
+  "claim": "VERIFY(I,C) in P demonstrated on micro-instance; P=NP remains HOLD",
+  "claim_status": "HOLD",
+  "claimed_total": 8,
+  "computed_total": 8,
+  "measurement_status": "OPEN",
+  "operational_authority": "NONE",
+  "p_equals_np_claim_status": "HOLD",
+  "path_steps": [
+    {
+      "item_index": 1,
+      "item_size": 4,
+      "local_valid": true,
+      "remaining_capacity": 4,
+      "step": 1
+    },
+    {
+      "item_index": 2,
+      "item_size": 4,
+      "local_valid": true,
+      "remaining_capacity": 0,
+      "step": 2
+    }
+  ],
+  "physical_authority": "NONE",
+  "route_directory": "01_OPEN/",
+  "status": "HOLD",
+  "w_post_hash": "532f67efdae1c3ff89d2d7b702f13e94289a5011fc3b1d0408359a712d1b041a",
+  "w_pre_hash": "653c912ca322b0268558c3c6a605cec2d2fae157e97e3724cc2a4b0563a76f54"
+}

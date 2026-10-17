@@ -1,0 +1,31 @@
+{
+  "claim_status": "HOLD",
+  "ghost_injection_case": {
+    "angle_deg_if_real": null,
+    "claim": "Sanitized trigonometric phase-cone boundary evaluation only",
+    "claim_status": "HOLD",
+    "imaginary_cos_magnitude_if_ghost": 0.906917857361,
+    "is_euclidean_admissible": false,
+    "measurement_status": "KILL",
+    "operational_authority": "NONE",
+    "physical_authority": "NONE",
+    "sin_theta_ratio": 1.35,
+    "status": "KILL",
+    "verdict_reason": "COMPLEX_ANGLE_GHOST_WAVEFRONT_VETO"
+  },
+  "operational_authority": "NONE",
+  "physical_authority": "NONE",
+  "physical_wavefront_case": {
+    "angle_deg_if_real": 30.0,
+    "claim": "Sanitized trigonometric phase-cone boundary evaluation only",
+    "claim_status": "HOLD",
+    "imaginary_cos_magnitude_if_ghost": 0.0,
+    "is_euclidean_admissible": true,
+    "measurement_status": "OPEN",
+    "operational_authority": "NONE",
+    "physical_authority": "NONE",
+    "sin_theta_ratio": 0.5,
+    "status": "HOLD",
+    "verdict_reason": "EUCLIDEAN_REAL_WAVEFRONT_ADMISSIBLE"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "bin_limit_b": 1,
+  "capacity": 8,
+  "claimed_total": 8,
+  "complete_flag": true,
+  "duplicate_flag": false,
+  "item_count": 2,
+  "item_size": 4
+}

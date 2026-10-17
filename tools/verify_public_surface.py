@@ -33,6 +33,13 @@ DISALLOWED_SUFFIXES = {
     ".zip",
 }
 
+MICROTESTS = (
+    ("kernel_drift_observable_v0_1", "kernel_drift.py", "test_kernel_drift.py"),
+    ("light_bridge_consequence_gate_v0_1", "light_bridge_gate.py", "test_light_bridge_gate.py"),
+    ("euclidean_phase_cone_isac_v0_1", "euclidean_phase_cone.py", "test_euclidean_phase_cone.py"),
+    ("p_np_yinyang_binpacking_v0_1", "yinyang_binpacking.py", "test_yinyang_binpacking.py"),
+)
+
 
 def git(*args: str) -> bytes:
     return subprocess.check_output(["git", "-C", str(ROOT), *args])
@@ -99,63 +106,59 @@ def main() -> int:
             print(f"- {finding}")
         return 2
 
-    # Microtest verification for kernel_drift_observable_v0_1
-    microtest_dir = ROOT / "artifacts" / "microtests" / "kernel_drift_observable_v0_1"
-    script_path = microtest_dir / "kernel_drift.py"
-    expected_output_path = microtest_dir / "EXPECTED_OUTPUT.txt"
-    test_script_path = microtest_dir / "test_kernel_drift.py"
-    checksums_path = microtest_dir / "CHECKSUMS.sha256"
+    for dir_name, script_name, test_name in MICROTESTS:
+        microtest_dir = ROOT / "artifacts" / "microtests" / dir_name
+        script_path = microtest_dir / script_name
+        expected_output_path = microtest_dir / "EXPECTED_OUTPUT.txt"
 
-    # 1. Byte-for-byte output comparison
-    try:
-        res = subprocess.run(
-            [sys.executable, str(script_path)],
-            cwd=microtest_dir,
-            capture_output=True,
-            check=True
-        )
-        actual_out = res.stdout
-        expected_out = expected_output_path.read_bytes()
+        try:
+            res = subprocess.run(
+                [sys.executable, str(script_path)],
+                cwd=microtest_dir,
+                capture_output=True,
+                check=True,
+            )
+            actual_out = res.stdout
+            expected_out = expected_output_path.read_bytes()
 
-        if actual_out != expected_out:
+            if actual_out != expected_out:
+                print("MICROTEST_GATE=KILL")
+                print(f"- Byte mismatch against EXPECTED_OUTPUT.txt in {dir_name}")
+                return 2
+        except Exception as e:
             print("MICROTEST_GATE=KILL")
-            print("- Byte mismatch against EXPECTED_OUTPUT.txt")
+            print(f"- Execution failed in {dir_name}: {e}")
             return 2
-    except Exception as e:
-        print("MICROTEST_GATE=KILL")
-        print(f"- Execution failed: {e}")
-        return 2
 
-    # 2. Run unit tests (6 tests)
-    try:
-        res_test = subprocess.run(
-            [sys.executable, "-m", "unittest", "-v", "test_kernel_drift.py"],
-            cwd=microtest_dir,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-    except Exception as e:
-        print("MICROTEST_GATE=KILL")
-        print(f"- Unit tests failed: {e}")
-        return 2
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "unittest", "-v", test_name],
+                cwd=microtest_dir,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except Exception as e:
+            print("MICROTEST_GATE=KILL")
+            print(f"- Unit tests failed in {dir_name}: {e}")
+            return 2
 
-    # 3. Verify CHECKSUMS.sha256
-    try:
-        res_sha = subprocess.run(
-            ["sha256sum", "-c", "CHECKSUMS.sha256"],
-            cwd=microtest_dir,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-    except Exception as e:
-        print("MICROTEST_GATE=KILL")
-        print(f"- CHECKSUMS.sha256 check failed: {e}")
-        return 2
+        try:
+            subprocess.run(
+                ["sha256sum", "-c", "CHECKSUMS.sha256"],
+                cwd=microtest_dir,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except Exception as e:
+            print("MICROTEST_GATE=KILL")
+            print(f"- CHECKSUMS.sha256 check failed in {dir_name}: {e}")
+            return 2
 
     print("PUBLIC_TREE_GATE=PASS")
     print("MICROTEST_GATE=PASS")
+    print(f"MICROTEST_SUITES_VERIFIED={len(MICROTESTS)}")
     print(f"TRACKED_FILES={len(tracked)}")
     print("SCOPE=EXACT_CHECKED_TREE_ONLY")
     print("RELEASE_GATE_STATUS=OPEN")

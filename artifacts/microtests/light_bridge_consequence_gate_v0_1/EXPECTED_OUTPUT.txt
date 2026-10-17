@@ -1,0 +1,21 @@
+{
+  "claim": "Bounded software consequence-gate state machine only",
+  "claim_status": "HOLD",
+  "collision_enabled": false,
+  "final_bridge_state": "HOLD_BLUEPRINT",
+  "final_witness_hash": "da778f654f5d9c9837b2bbdc5db3a07e76d2f202de66df396be14dcdbd25375e",
+  "invariants_verified": {
+    "append_only_reset": true,
+    "explicit_evidence_required": true,
+    "hold_never_opens_by_time": true,
+    "kill_disables_collision_and_cancels_pending": true,
+    "occupied_zone_defers_realization": true
+  },
+  "is_kill_latched": false,
+  "measurement_status": "OPEN",
+  "modeled_voltage_v": 0.0,
+  "operational_authority": "NONE",
+  "physical_authority": "NONE",
+  "status": "HOLD",
+  "witness_count": 5
+}

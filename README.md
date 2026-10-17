@@ -61,8 +61,25 @@ repository state is recorded in [STATUS_PUBLIC.md](STATUS_PUBLIC.md).
 ## Public microtests
 
 - [Kernel Drift Observable v0.1](artifacts/microtests/kernel_drift_observable_v0_1/SURFACE.md)
-  — deterministic synthetic measurement; measurement `OPEN`, research claim `HOLD`,
-  physical and operational authority `NONE`.
+  — deterministic synthetic relational Gram-kernel drift vs. pointwise feature drift;
+  measurement `OPEN`, research claim `HOLD`, physical and operational authority `NONE`.
+- [LightBridge Consequence Gate v0.1 (`light_bridge.gd`)](artifacts/microtests/light_bridge_consequence_gate_v0_1/SURFACE.md)
+  — canonical 2D consequence-gate state machine (Godot 4 GDScript + zero-dependency
+  Python verifier): `HOLD` never opens by time passage alone, `OPEN` requires explicit
+  `evidence_id`, occupied bridge zone defers realization until clearance, `KILL`
+  disables collision and cancels pending authorization, and `reset()` appends to the
+  witness log without erasing history; physical and operational authority `NONE`.
+- [Euclidean Wavefront Phase-Cone Gate v0.1 (ISAC Geometry)](artifacts/microtests/euclidean_phase_cone_isac_v0_1/SURFACE.md)
+  — sanitized trigonometric interferometer phase-cone check (`sin(theta) = Delta_phi / pi`
+  for `d = lambda / 2`): physical Euclidean wavefronts obey `|Delta_phi / pi| <= 1.0`
+  (`OPEN`), while super-Euclidean synthetic phase-offset injections (`|Delta_phi / pi| > 1.0`)
+  require an imaginary cosine component and trigger immediate `KILL`; physical and
+  operational authority `NONE`.
+- [P–NP Yin–Yang Bin Packing v0.1 (`PUNKT // BANE`)](artifacts/microtests/p_np_yinyang_binpacking_v0_1/SURFACE.md)
+  — formal separation between an unregulated candidate placement (`NP` certificate
+  point `C`) and a polynomial-time step-verified construction path (`P` trajectory
+  `gamma` with `W_PRE` and `W_POST` witness hashes); `VERIFY(I,C) in P` demonstrated on
+  `2 x 4 = 8 <= 8`, while `P=NP` claim remains strictly `HOLD`.
 
 ## Reproduce a release
 

@@ -1,0 +1,12 @@
+{
+  "bridge_id": "LB-PUBLIC-001",
+  "sequence": [
+    {"action": "INIT_HOLD", "proposal_id": "PROP-01"},
+    {"action": "TICK_TIME", "delta_seconds": 3600.0},
+    {"action": "ENTER_ZONE", "body_id": "PLAYER-1"},
+    {"action": "ATTEMPT_OPEN", "evidence_id": "EV-VALID-001"},
+    {"action": "EXIT_ZONE", "body_id": "PLAYER-1"},
+    {"action": "TRIGGER_KILL", "reason": "BOUNDARY_ANOMALY"},
+    {"action": "RESET_BRIDGE", "reason": "CANVAS_RESET"}
+  ]
+}
