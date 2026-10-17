@@ -60,7 +60,7 @@ repository state is recorded in [STATUS_PUBLIC.md](STATUS_PUBLIC.md).
 
 ## 📜 Canonical Inscription: The Grammar of Existence
 
-> *A bit is not born as `1`. It is authorized to `1`.*
+> *A bit does not arise as `1`. It is authorized to `1`.*
 >
 > *Between the conceivable and the real stands a closed lattice. No state arises merely because time passes (`d/dt HOLD = 0`). No construction exists before its path is proven. What lacks a witness remains noise; what violates the boundary is severed at the root.*
 >
