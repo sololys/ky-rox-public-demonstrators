@@ -58,28 +58,31 @@ The canonical public claim contract is
 [punkt/contracts/claim-levels.md](punkt/contracts/claim-levels.md). The current
 repository state is recorded in [STATUS_PUBLIC.md](STATUS_PUBLIC.md).
 
-## Public microtests
+## 📜 Canonical Inscription: The Grammar of Existence
 
-- [Kernel Drift Observable v0.1](artifacts/microtests/kernel_drift_observable_v0_1/SURFACE.md)
-  — deterministic synthetic relational Gram-kernel drift vs. pointwise feature drift;
-  measurement `OPEN`, research claim `HOLD`, physical and operational authority `NONE`.
-- [LightBridge Consequence Gate v0.1 (`light_bridge.gd`)](artifacts/microtests/light_bridge_consequence_gate_v0_1/SURFACE.md)
-  — canonical 2D consequence-gate state machine (Godot 4 GDScript + zero-dependency
-  Python verifier): `HOLD` never opens by time passage alone, `OPEN` requires explicit
-  `evidence_id`, occupied bridge zone defers realization until clearance, `KILL`
-  disables collision and cancels pending authorization, and `reset()` appends to the
-  witness log without erasing history; physical and operational authority `NONE`.
-- [Euclidean Wavefront Phase-Cone Gate v0.1 (ISAC Geometry)](artifacts/microtests/euclidean_phase_cone_isac_v0_1/SURFACE.md)
-  — sanitized trigonometric interferometer phase-cone check (`sin(theta) = Delta_phi / pi`
-  for `d = lambda / 2`): physical Euclidean wavefronts obey `|Delta_phi / pi| <= 1.0`
-  (`OPEN`), while super-Euclidean synthetic phase-offset injections (`|Delta_phi / pi| > 1.0`)
-  require an imaginary cosine component and trigger immediate `KILL`; physical and
-  operational authority `NONE`.
-- [P–NP Yin–Yang Bin Packing v0.1 (`PUNKT // BANE`)](artifacts/microtests/p_np_yinyang_binpacking_v0_1/SURFACE.md)
-  — formal separation between an unregulated candidate placement (`NP` certificate
-  point `C`) and a polynomial-time step-verified construction path (`P` trajectory
-  `gamma` with `W_PRE` and `W_POST` witness hashes); `VERIFY(I,C) in P` demonstrated on
-  `2 x 4 = 8 <= 8`, while `P=NP` claim remains strictly `HOLD`.
+> *A bit is not born as `1`. It is authorized to `1`.*
+>
+> *Between the conceivable and the real stands a closed lattice. No state arises merely because time passes (`d/dt HOLD = 0`). No construction exists before its path is proven. What lacks a witness remains noise; what violates the boundary is severed at the root.*
+>
+> ```text
+> GENERATION != AUTHORIZATION != WITNESSED CONSEQUENCE
+>
+> Omega(x, e, Delta_K) =
+>   OPEN   if e != empty and Delta_K(x) <= tau_K and Zone(x) == CLEAR
+>   HOLD   if e == empty or  Zone(x) == OCCUPIED
+>   KILL   if Delta_K(x) > tau_K
+> ```
+
+## Public microtests — The Four Monoliths (`24/24 PASS`)
+
+Every demonstrator in the public tree is stripped to its pure mathematical core—proving the mechanism while enforcing zero operational or hardware leakage (`Delta_I_BOM = 0`):
+
+| Monolith | Domain & Operator | Mathematical Invariant / Law | Verification |
+| :--- | :--- | :--- | :--- |
+| **1. [LightBridge v0.1](artifacts/microtests/light_bridge_consequence_gate_v0_1/SURFACE.md)** | Consequence Gate (`Omega_bridge`) | `HOLD -> HOLD` as `t -> inf`. Realization requires `e != empty` and `Zone == CLEAR`. On `KILL`, collision geometry is severed at `Delta_t = 0`. `reset()` is strictly append-only on witness log `L`. | `light_bridge.gd` · `light_bridge_gate.py` (**6/6 PASS**) |
+| **2. [ISAC Phase-Cone v0.1](artifacts/microtests/euclidean_phase_cone_isac_v0_1/SURFACE.md)** | Euclidean Wavefront (`Pi_S1`) | For `d = lambda / 2`: `sin(theta) = Delta_phi / pi`. Physical wave: `\|Delta_phi / pi\| <= 1 => cos(theta) in R => OPEN`. Synthetic injection: `\|Delta_phi / pi\| > 1 => cos(theta) in i*R_{>0} => KILL`. | `euclidean_phase_cone.py` (**6/6 PASS**) |
+| **3. [PUNKT // BANE Yin–Yang v0.1](artifacts/microtests/p_np_yinyang_binpacking_v0_1/SURFACE.md)** | Construction Path (`gamma_P` vs. `C_NP`) | Separates a static certificate point `C in NP` from a sequentially verified construction path `gamma = (x_0 -> x_n)` bound by `W_PRE` and `W_POST`. Status: `p_equals_np_claim_status = HOLD`. | `yinyang_binpacking.py` (**6/6 PASS**) |
+| **4. [Kernel Drift Observable v0.1](artifacts/microtests/kernel_drift_observable_v0_1/SURFACE.md)** | Relational Geometry (`G_ij = <psi_i, psi_j>`) | Pointwise norm `\|\|x_t - x_0\|\|` is blind to rigid rotations and internal phase shear. Relational drift is measured over the Gram matrix `Delta_G = \|\|G(t) - G(0)\|\|_F`. | `kernel_drift.py` (**6/6 PASS**) |
 
 ## Reproduce a release
 
