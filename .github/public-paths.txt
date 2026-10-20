@@ -26,6 +26,8 @@ artifacts/microtests/p_np_yinyang_binpacking_v0_1/yinyang_binpacking.py
 bane/BOUNDARY.md
 .github/CODEOWNERS
 .github/public-paths.txt
+.github/PULL_REQUEST_TEMPLATE.md
+.github/workflows/morandi-core-gate.yml
 .github/workflows/public-surface-gate.yml
 .gitignore
 L1_LAW/DEMO_ATTEST_MAL.md
