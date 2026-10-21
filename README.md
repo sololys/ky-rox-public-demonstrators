@@ -11,6 +11,8 @@ $$\Omega(x, e, \Delta_K) = \begin{cases} \text{OPEN} & \text{if } e \neq \varnot
 **Compiled Ingress (EN):** Bounded, deterministic `L1` software microtests (`24/24 PASS`) demonstrating fail-closed consequence gating (`OPEN / HOLD / KILL`). Zero external dependencies ($\Sigma_{\text{ext}} = \emptyset$, Python 3.10+ Standard Library only). Zero physical or operational authority (`0.00 V DC`).
 **Kompilert Ingress (NO):** Avgrensede, deterministiske `L1`-mikrotester (`24/24 PASS`) for fail-closed konsekvensporter (`OPEN / HOLD / KILL`). Null eksterne avhengigheter ($\Sigma_{\text{ext}} = \emptyset$, kun Python 3.10+ standardbibliotek). Null fysisk eller operasjonell autoritet (`0,00 V DC`).
 
+* **Author:** Marius Egerhei Torjusen ([ORCID: `0009-0006-0431-6637`](https://orcid.org/0009-0006-0431-6637) · [Zenodo DOIs: `10.5281/zenodo.18436983`](https://doi.org/10.5281/zenodo.18436983) · [`10.5281/zenodo.22229111`](https://doi.org/10.5281/zenodo.22229111))
+
 ---
 
 ## I. Execution Contract (`Makefile` & `run_demo.py`)
