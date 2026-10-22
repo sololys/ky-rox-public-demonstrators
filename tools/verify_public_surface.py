@@ -39,6 +39,7 @@ MICROTESTS = (
     ("euclidean_phase_cone_isac_v0_1", "euclidean_phase_cone.py", "test_euclidean_phase_cone.py"),
     ("p_np_yinyang_binpacking_v0_1", "yinyang_binpacking.py", "test_yinyang_binpacking.py"),
     ("mpolynomial_1wl_molecular_gate_v0_1", "mpolynomial_1wl_molecular_gate.py", "test_mpolynomial_1wl_molecular_gate.py"),
+    ("pwr2_scrambling_collective_gate_v0_1", "pwr2_scrambling_collective_gate.py", "test_pwr2_scrambling_collective_gate.py"),
 )
 
 

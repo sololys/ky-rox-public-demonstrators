@@ -55,6 +55,13 @@ MICROTESTS = (
         "mpolynomial_1wl_molecular_gate.py",
         "test_mpolynomial_1wl_molecular_gate.py",
     ),
+    (
+        "6. SPINN",
+        "PWR2 Scrambling vs. Collective Gate v0.1",
+        "pwr2_scrambling_collective_gate_v0_1",
+        "pwr2_scrambling_collective_gate.py",
+        "test_pwr2_scrambling_collective_gate.py",
+    ),
 )
 
 

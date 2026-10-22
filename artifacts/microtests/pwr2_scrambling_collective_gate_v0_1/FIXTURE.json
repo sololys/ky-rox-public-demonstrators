@@ -1,0 +1,7 @@
+{
+  "fixture_id": "pwr2_scrambling_collective_gate_v0_1",
+  "num_spins_n": 32,
+  "scrambling_flips_k": 16,
+  "crossover_flips_k": 4,
+  "alpha": 1.0
+}

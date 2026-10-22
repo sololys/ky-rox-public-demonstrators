@@ -1,0 +1,15 @@
+{
+  "claim": "Bounded spectral spin-graph and consequence gate evaluation only",
+  "claim_status": "HOLD",
+  "collective_k0_gate": "GATE::OPEN",
+  "collective_qfi_per_spin": 32.0,
+  "crossover_k4_gate": "GATE::HOLD",
+  "epistemic_boundary": "INSPIRED_BY != IMPLEMENTS != PROVES",
+  "operational_authority": "NONE",
+  "physical_authority": "NONE",
+  "pl_alternating_k16_gate": "GATE::HOLD",
+  "pl_one_sided_k16_gate": "GATE::KILL",
+  "pwr2_alternating_k16_gamma_sq": 20.0,
+  "pwr2_alternating_k16_gate": "GATE::KILL",
+  "pwr2_lambda_n_over_2": 5.0
+}
