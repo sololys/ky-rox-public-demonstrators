@@ -48,6 +48,13 @@ MICROTESTS = (
         "kernel_drift.py",
         "test_kernel_drift.py",
     ),
+    (
+        "5. MOLEKYL",
+        "M-Polynomial & 1-WL Molecular Gate v0.1",
+        "mpolynomial_1wl_molecular_gate_v0_1",
+        "mpolynomial_1wl_molecular_gate.py",
+        "test_mpolynomial_1wl_molecular_gate.py",
+    ),
 )
 
 

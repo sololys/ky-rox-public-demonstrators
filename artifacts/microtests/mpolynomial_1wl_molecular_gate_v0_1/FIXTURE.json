@@ -1,0 +1,9 @@
+{
+  "fixture_id": "mpolynomial_1wl_molecular_gate_v0_1",
+  "primary_graph": "femos_cofactor_fe7mos9c",
+  "collision_pair": [
+    "decalin",
+    "bicyclopentyl"
+  ],
+  "hallucination_graph": "texas_carbon_hallucination"
+}

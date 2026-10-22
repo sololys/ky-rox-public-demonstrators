@@ -1,0 +1,14 @@
+{
+  "claim": "Bounded algebraic graph invariant and consequence gate evaluation only",
+  "claim_status": "HOLD",
+  "collision_1wl_gate": "GATE::HOLD",
+  "collision_polynomial": "6*x^2*y^2 + 4*x^2*y^3 + x^3*y^3",
+  "epistemic_boundary": "INSPIRED_BY != IMPLEMENTS != PROVES",
+  "femos_first_zagreb_m1": 216.0,
+  "femos_gate": "GATE::OPEN",
+  "femos_polynomial": "6*x^2*y^4 + 6*x^3*y^3 + 12*x^3*y^4 + 6*x^4*y^6",
+  "femos_second_zagreb_m2": 390.0,
+  "hallucination_gate": "GATE::KILL",
+  "operational_authority": "NONE",
+  "physical_authority": "NONE"
+}

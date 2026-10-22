@@ -12,4 +12,4 @@ verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py
 	@python3 L2_GATE/evaluate_boundaries.py
 	@python3 run_demo.py
-	@echo "[L1_VERIFIED // HOLD_READY_FOR_W2] L1 software checks passed (PHYSICAL_AUTHORITY=NONE; W_human required for W2). All 4 Monoliths (24/24) and public surface bounds satisfied."
+	@echo "[L1_VERIFIED // HOLD_READY_FOR_W2] L1 software checks passed (PHYSICAL_AUTHORITY=NONE; W_human required for W2). All 5 Monoliths (30/30) and public surface bounds satisfied."
