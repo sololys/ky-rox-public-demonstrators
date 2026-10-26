@@ -50,6 +50,7 @@ L1_LAW/STATUS_PUBLIC.md
 L2_GATE/evaluate_boundaries.py
 L3_WITNESS/audit_log.jsonl
 Makefile
+monoliths/staggered_prf_fine_wilf_gate.py
 punkt/contracts/candidate-not-consequence.md
 punkt/contracts/claim-levels.md
 punkt/contracts/decision-vocabulary.md

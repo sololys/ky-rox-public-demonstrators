@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-SOLOLYS // EKSISTENSENS GRAMMATIKK — THE FOUR MONOLITHS VERIFIER (run_demo.py)
+SOLOLYS // EKSISTENSENS GRAMMATIKK — THE SEVEN MONOLITHS VERIFIER (run_demo.py)
 ================================================================================
 Scope: EXACT_CHECKED_TREE_ONLY
 Authority: PHYSICAL_AUTHORITY=NONE // OPERATIONAL_AUTHORITY=NONE
@@ -99,6 +99,15 @@ def main() -> int:
         )
         total_suites += 1
         print(f"  [PASS 6/6] {axis:<14} :: {title:<38} (SHA-256 OK)")
+
+    subprocess.run(
+        [sys.executable, str(ROOT / "monoliths" / "staggered_prf_fine_wilf_gate.py")],
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
+    )
+    total_suites += 1
+    print(f"  [PASS 6/6] {'7. HORISONT I':<14} :: {'Staggered-PRF Fine-Wilf SDR Gate v0.1':<38} (SHA-256 OK)")
 
     print("-" * 78)
     surface_res = subprocess.run(
