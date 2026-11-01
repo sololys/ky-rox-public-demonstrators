@@ -5,11 +5,11 @@
 .PHONY: hold verify
 
 hold:
-	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains and The Four Monoliths."
+	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains, The 7 Monoliths, and SPEC-412..415 Domain Gates."
 	@exit 1
 
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py
 	@python3 L2_GATE/evaluate_boundaries.py
 	@python3 run_demo.py
-	@echo "[L1_VERIFIED // HOLD_READY_FOR_W2] L1 software checks passed (PHYSICAL_AUTHORITY=NONE; W_human required for W2). All 6 Monoliths (36/36) and public surface bounds satisfied."
+	@echo "[L1_VERIFIED // HOLD_READY_FOR_W2] L1 software checks passed (PHYSICAL_AUTHORITY=NONE; W_human required for W2). All 8 Suites (48/48) and 10/10 L1_LAW bounds satisfied."

@@ -109,6 +109,15 @@ def main() -> int:
     total_suites += 1
     print(f"  [PASS 6/6] {'7. HORISONT I':<14} :: {'Staggered-PRF Fine-Wilf SDR Gate v0.1':<38} (SHA-256 OK)")
 
+    subprocess.run(
+        [sys.executable, str(ROOT / "monoliths" / "spec412_415_domain_gates.py")],
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
+    )
+    total_suites += 1
+    print(f"  [PASS 6/6] {'8. SPEC-412..415':<14} :: {'Forlik / Orbital / Radar / K-POD v2.0':<38} (SHA-256 OK)")
+
     print("-" * 78)
     surface_res = subprocess.run(
         [sys.executable, str(ROOT / "tools" / "verify_public_surface.py")],
