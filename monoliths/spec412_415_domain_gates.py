@@ -184,12 +184,18 @@ def spec413_evaluate_orbital_gate(
         return Spec413OrbitalStatus.REMOTE_ACTUATION_KILL, D("0.00")
     kp = nonnegative_decimal(kp_index)
     snr = exact_decimal(snr_db)
-    s_obs = spec413_sub_half_wavelength_s_obs(phase_diff_rad, spacing_eta=spacing_eta)
-    if kp >= D("7.0"):
+    if not (kp < D("7.0")):
         return Spec413OrbitalStatus.STORM_STASIS, D("0.00")
-    if abs(s_obs) > 1.0:
+    if not (
+        math.isfinite(phase_diff_rad)
+        and math.isfinite(spacing_eta)
+        and 0.0 < spacing_eta <= 1.0
+    ):
         return Spec413OrbitalStatus.JAMMING_KILL, D("0.00")
-    if snr < D("6.0"):
+    s_obs = spec413_sub_half_wavelength_s_obs(phase_diff_rad, spacing_eta=spacing_eta)
+    if not (math.isfinite(s_obs) and abs(s_obs) <= 1.0):
+        return Spec413OrbitalStatus.JAMMING_KILL, D("0.00")
+    if not (snr >= D("6.0")):
         return Spec413OrbitalStatus.TELEMETRY_SNR_HOLD, D("0.00")
     return Spec413OrbitalStatus.NOMINAL_ORBIT, D("5.00")
 
@@ -229,6 +235,17 @@ def spec414_unfold_staggered_prf(
     tau_crt_hz: float = 100.0,
 ) -> tuple[float, float, bool]:
     """Unfold aliased Doppler across 5:6 staggered PRFs (10.0 kHz & 12.0 kHz)."""
+    if not (
+        math.isfinite(aliased_f1_hz)
+        and math.isfinite(aliased_f2_hz)
+        and math.isfinite(prf1_hz)
+        and math.isfinite(prf2_hz)
+        and math.isfinite(tau_crt_hz)
+        and prf1_hz > 0.0
+        and prf2_hz > 0.0
+        and tau_crt_hz >= 0.0
+    ):
+        return 0.0, 0.0, False
     best_res = float("inf")
     best_fd = 0.0
     for m1 in range(-winding_bound, winding_bound + 1):
@@ -243,7 +260,8 @@ def spec414_unfold_staggered_prf(
                 best_res = res
                 best_fd = cand_mean
     vel_mps = (best_fd * WAVELENGTH_77GHZ_M) / 2.0
-    return best_fd, vel_mps, (best_res <= tau_crt_hz)
+    is_ok = math.isfinite(best_res) and (0.0 <= best_res <= tau_crt_hz)
+    return best_fd, vel_mps, is_ok
 
 
 def spec414_butterfly_a5_curvature(
@@ -252,6 +270,12 @@ def spec414_butterfly_a5_curvature(
     residual_jamming_tau: float = 0.35,
     autonomous_escalation_rate: float = 0.0,
 ) -> tuple[float, bool]:
+    if not (
+        math.isfinite(buffer_b)
+        and math.isfinite(residual_jamming_tau)
+        and math.isfinite(autonomous_escalation_rate)
+    ):
+        return 0.0, False
     c_war = round((buffer_b - 0.4) * (1.0 - residual_jamming_tau), 6)
     stable = (
         buffer_b >= 1.0
@@ -292,9 +316,14 @@ def spec415_evaluate_benthic_kpod_gate(
 ) -> tuple[Spec415BenthicState, Decimal, str]:
     spl = nonnegative_decimal(spl_db)
     rtt = nonnegative_decimal(optical_532nm_rtt_ns)
-    if spl >= SABOTAGE_SPL_THRESHOLD_DB:
+    if not (spl < SABOTAGE_SPL_THRESHOLD_DB):
         return Spec415BenthicState.SABOTAGE_ACOUSTIC_KILL, D("0.00"), "SPL_145DB_CROWBAR_KILL"
-    if rtt > MAX_OPTICAL_532NM_RTT_NS or final_tof_range_m > 20.0:
+    if not (
+        math.isfinite(initial_range_m)
+        and math.isfinite(final_tof_range_m)
+        and 0.0 <= final_tof_range_m <= 20.0
+        and rtt <= MAX_OPTICAL_532NM_RTT_NS
+    ):
         return Spec415BenthicState.OPTICAL_TOF_VIOLATION_KILL, D("0.00"), "OPTICAL_532NM_TOF_KILL"
 
     o2 = nonnegative_decimal(o2_ppm)
@@ -304,18 +333,30 @@ def spec415_evaluate_benthic_kpod_gate(
     fe = nonnegative_decimal(faradaic_eff_pct)
     p_kpa = nonnegative_decimal(pressure_kpa)
 
-    if (
-        o2 > D("0.10")
-        or not (D("2.0") <= kie <= D("7.0"))
-        or not (D("0.38") <= d_fe <= D("0.42"))
-        or not (D("-2.37") <= t_c <= D("52.37"))
-        or p_kpa > D("250.0")
+    if not (
+        o2 <= D("0.10")
+        and D("2.0") <= kie <= D("7.0")
+        and D("0.38") <= d_fe <= D("0.42")
+        and D("-2.37") <= t_c <= D("52.37")
+        and p_kpa <= D("250.0")
     ):
         return Spec415BenthicState.CDC_LOCK_KILL, D("0.00"), "CDC_MOSSBAUER_OR_MOP_KILL"
 
+    if not (
+        bool(doppler_velocities_mps)
+        and math.isfinite(dt_s)
+        and dt_s > 0.0
+        and all(math.isfinite(v) for v in doppler_velocities_mps)
+    ):
+        return (
+            Spec415BenthicState.COURIER_KINEMATIC_MISMATCH_KILL,
+            D("0.00"),
+            "MONOTONICITY_OR_NAN_VIOLATION_KILL",
+        )
+
     doppler_delta_r = sum(v * dt_s for v in doppler_velocities_mps)
     tof_delta_r = final_tof_range_m - initial_range_m
-    if abs(doppler_delta_r - tof_delta_r) > 0.60:
+    if not (math.isfinite(doppler_delta_r) and abs(doppler_delta_r - tof_delta_r) <= 0.60):
         return (
             Spec415BenthicState.COURIER_KINEMATIC_MISMATCH_KILL,
             D("0.00"),
@@ -414,6 +455,17 @@ class TestSpec412To415DomainGates(unittest.TestCase):
         self.assertEqual(st_jam, Spec413OrbitalStatus.JAMMING_KILL)
         self.assertEqual(v_jam, D("0.00"))
 
+        st_nan, v_nan = spec413_evaluate_orbital_gate(
+            measured_rtt_ns="3800000",
+            phase_diff_rad=float("nan"),
+            kp_index="2.0",
+            snr_db="14.0",
+            is_direct_actuation=False,
+            spacing_eta=0.5,
+        )
+        self.assertEqual(st_nan, Spec413OrbitalStatus.JAMMING_KILL)
+        self.assertEqual(v_nan, D("0.00"))
+
         st_ok, v_ok = spec413_evaluate_orbital_gate(
             measured_rtt_ns="3800000",
             phase_diff_rad=0.25 * math.pi,
@@ -446,6 +498,11 @@ class TestSpec412To415DomainGates(unittest.TestCase):
         self.assertAlmostEqual(unfolded_fd, true_fd, places=6)
         self.assertGreater(vel_mps, 40.0)
 
+        _, _, ok_bad = spec414_unfold_staggered_prf(f1 + 500.0, f2, tau_crt_hz=100.0)
+        self.assertFalse(ok_bad)
+        _, _, ok_nan = spec414_unfold_staggered_prf(float("nan"), f2)
+        self.assertFalse(ok_nan)
+
         c_war, stable = spec414_butterfly_a5_curvature()
         self.assertEqual(c_war, 0.5525)
         self.assertTrue(stable)
@@ -469,6 +526,16 @@ class TestSpec412To415DomainGates(unittest.TestCase):
         )
         self.assertEqual(st_spoof, Spec415BenthicState.COURIER_KINEMATIC_MISMATCH_KILL)
         self.assertEqual(v_spoof, D("0.00"))
+
+        st_neg_dt, v_neg_dt, _ = spec415_evaluate_benthic_kpod_gate(dt_s=-1.0)
+        self.assertEqual(st_neg_dt, Spec415BenthicState.COURIER_KINEMATIC_MISMATCH_KILL)
+        self.assertEqual(v_neg_dt, D("0.00"))
+
+        st_nan_v, v_nan_v, _ = spec415_evaluate_benthic_kpod_gate(
+            doppler_velocities_mps=(float("nan"), -2.0, -2.0, -2.0),
+        )
+        self.assertEqual(st_nan_v, Spec415BenthicState.COURIER_KINEMATIC_MISMATCH_KILL)
+        self.assertEqual(v_nan_v, D("0.00"))
 
         st_hold, v_hold, _ = spec415_evaluate_benthic_kpod_gate(human_w2_authorized=False)
         self.assertEqual(st_hold, Spec415BenthicState.HOLD_BENTHIC_A5)
