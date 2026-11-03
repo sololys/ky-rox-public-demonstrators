@@ -11,12 +11,16 @@ L1_LAW/STACK_MAP_v0.1.md
 L1_LAW/STATUS_PUBLIC.md
 L1_LAW/invariants_pure.py
 L1_LAW/ky_parser.py
+L1_LAW/rosetta_d3_gate.py
 L1_LAW/test_ky_parser.py
+L1_LAW/test_rosetta_d3.py
 L2_GATE/adversarial_capsule_gate_harness.py
 L2_GATE/evaluate_boundaries.py
 L2_GATE/fpga_capsule_frame_205b_decoder.sv
 L2_GATE/fpga_witness_ledger_engine.py
+L2_GATE/registry_b_dlatch_telemetry_protocol.py
 L2_GATE/test_adversarial_capsule_gate_harness.py
+L2_GATE/test_registry_b_dlatch_telemetry_protocol.py
 L3_WITNESS/audit_log.jsonl
 Makefile
 README.md
