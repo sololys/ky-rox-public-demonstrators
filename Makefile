@@ -11,5 +11,6 @@ hold:
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py
 	@python3 L2_GATE/evaluate_boundaries.py
+	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_adversarial_capsule_gate_harness.py
 	@python3 run_demo.py
 	@echo "[L1_VERIFIED // HOLD_READY_FOR_W2] L1 software checks passed (PHYSICAL_AUTHORITY=NONE; W_human required for W2). All 8 Suites (48/48) and 10/10 L1_LAW bounds satisfied."
