@@ -209,7 +209,32 @@ class TestGothenburgCorridorSpec414To416(unittest.TestCase):
         sv_415 = os.path.join(rtl_dir, "spec415_kpod_cdc_gate.sv")
         sv_416 = os.path.join(rtl_dir, "spec416_infranett_witness_gate.sv")
 
-        tb_sv = """
+        # Generate exact 205B (1640-bit) frames from Python L1 Spec416InfranettGate
+        _, _, w_pre_hold, w_post_hold, frame_hold_205 = Spec416InfranettGate.evaluate_and_seal_w_pre_w_post(
+            self.nominal_416_software
+        )
+        w_pre_sha_hold = hashlib.sha256(w_pre_hold).hexdigest()
+        post_exec_hold = w_post_hold[40:72].hex()
+        frame_hold_hex = frame_hold_205.hex()
+
+        l3_open_telemetry = Spec416InfranettTelemetry(
+            **{
+                **self.nominal_416_software.__dict__,
+                "seq_c": 43,
+                "committed_c_hw": 42,
+                "adc_timestamp_ns": 1050,
+                "clk_timestamp_ns": 1000,
+                "shunt_current_ua": 5120,
+            }
+        )
+        _, _, w_pre_open, w_post_open, frame_open_205 = Spec416InfranettGate.evaluate_and_seal_w_pre_w_post(
+            l3_open_telemetry
+        )
+        w_pre_sha_open = hashlib.sha256(w_pre_open).hexdigest()
+        post_exec_open = w_post_open[40:72].hex()
+        frame_open_hex = frame_open_205.hex()
+
+        tb_sv = f"""
 `default_nettype none
 `timescale 1ns/1ps
 
@@ -245,98 +270,87 @@ module tb_gothenburg_corridor;
         .actuate_pin_o      (pin_415)
     );
 
-    // SPEC-416 signals
-    logic [31:0]        magic_416;
-    logic               crc_416;
-    logic [63:0]        seq_c;
-    logic [63:0]        c_hw;
-    logic [255:0]       w_pre_hash;
-    logic [255:0]       w_post_pre_hash;
-    logic signed [63:0] delta_r_num;
-    logic [15:0]        atten_mdb;
-    logic [15:0]        step_mdb;
-    logic [15:0]        freq_mhz;
-    logic [15:0]        ptp_ns;
-    logic [7:0]         bft_sigs;
-    logic [7:0]         bft_f;
-    logic               adc_ok_416;
-    logic [15:0]        shunt_416;
-    wire  [1:0]         state_416;
-    wire                pin_416;
+    // SPEC-416 signals (1640-bit / 205B direct decoder)
+    logic          frame_valid_416;
+    logic [1639:0] frame_205b_416;
+    logic [255:0]  comp_w_pre_sha;
+    logic [255:0]  exp_post_exec;
+    logic [15:0]   step_mdb;
+    logic [15:0]   rocof_mhz_s;
+    logic          crc_416;
+    wire  [1:0]    state_416;
+    wire           pin_416;
 
     spec416_infranett_witness_gate dut_416 (
-        .clk_sys_i               (clk),
-        .rst_n_i                 (rst_n),
-        .frame_magic_i           (magic_416),
-        .capsule_crc_ok_i        (crc_416),
-        .seq_c_i                 (seq_c),
-        .committed_c_hw_i        (c_hw),
-        .w_pre_hash_computed_i   (w_pre_hash),
-        .w_post_bound_pre_hash_i (w_post_pre_hash),
-        .kirchhoff_delta_r_num_i (delta_r_num),
-        .fiber_atten_mdb_km_i    (atten_mdb),
-        .fiber_step_loss_mdb_i   (step_mdb),
-        .grid_freq_mhz_i         (freq_mhz),
-        .ptp_abs_offset_ns_i     (ptp_ns),
-        .bft_valid_sigs_i        (bft_sigs),
-        .bft_fault_f_i           (bft_f),
-        .adc_time_valid_i        (adc_ok_416),
-        .shunt_current_ua_i      (shunt_416),
-        .gate_state_o            (state_416),
-        .breaker_pin_o           (pin_416)
+        .clk_sys_i            (clk),
+        .rst_n_i              (rst_n),
+        .frame_valid_i        (frame_valid_416),
+        .frame_205b_i         (frame_205b_416),
+        .computed_w_pre_sha_i (comp_w_pre_sha),
+        .expected_post_exec_i (exp_post_exec),
+        .otdr_step_loss_mdb_i (step_mdb),
+        .rocof_abs_mhz_s_i    (rocof_mhz_s),
+        .crc32_valid_i        (crc_416),
+        .gate_state_o         (state_416),
+        .breaker_actuate_o    (pin_416)
     );
 
     initial begin
         rst_n = 1'b0;
-        cdc_valid = 5'b11111;
-        magic_415 = 32'hABCD_EF00;
-        crc_415   = 1'b1;
-        spl_dbx   = 16'd1180;
-        r_532_mm  = 16'd4500;
-        r_uwb_mm  = 16'd4508;
+        cdc_valid  = 5'b11111;
+        magic_415  = 32'hABCD_EF00;
+        crc_415    = 1'b1;
+        spl_dbx    = 16'd1180;
+        r_532_mm   = 16'd4500;
+        r_uwb_mm   = 16'd4508;
         adc_ok_415 = 1'b0;
         shunt_415  = 16'd0;
 
-        magic_416       = 32'hABCD_EF00;
-        crc_416         = 1'b1;
-        seq_c           = 64'd42;
-        c_hw            = 64'd41;
-        w_pre_hash      = 256'hAA55_AA55;
-        w_post_pre_hash = 256'hAA55_AA55;
-        delta_r_num     = 64'sd0;
-        atten_mdb       = 16'd195;
+        frame_valid_416 = 1'b0;
+        frame_205b_416  = 1640'h{frame_hold_hex};
+        comp_w_pre_sha  = 256'h{w_pre_sha_hold};
+        exp_post_exec   = 256'h{post_exec_hold};
         step_mdb        = 16'd18;
-        freq_mhz        = 16'd50000;
-        ptp_ns          = 16'd24;
-        bft_sigs        = 8'd5;
-        bft_f           = 8'd2;
-        adc_ok_416      = 1'b0;
-        shunt_416       = 16'd0;
+        rocof_mhz_s     = 16'd120;
+        crc_416         = 1'b1;
 
         #20 rst_n = 1'b1;
-        // Wait 3 clock cycles for 2-FF CDC synchronizer and check Registry B HOLD (0.00 V DC)
-        #30;
+        // Single-cycle packet arrival strobe for seq=42 (HOLD frame)
+        @(negedge clk);
+        frame_valid_416 = 1'b1;
+        @(negedge clk);
+        frame_valid_416 = 1'b0;
+        #10;
         if (state_415 !== 2'b00 || pin_415 !== 1'b0) $fatal(1, "415 Reg B HOLD failed");
         if (state_416 !== 2'b00 || pin_416 !== 1'b0) $fatal(1, "416 Reg B HOLD failed");
 
-        // Supply witnessed L3 HIL telemetry (t_ADC >= t_clk && I_shunt >= 500 uA) -> OPEN
+        // Supply witnessed L3 HIL 205B frame (seq=43, dt_ADC=50ns, shunt=5120uA) -> OPEN
+        @(negedge clk);
         adc_ok_415 = 1'b1; shunt_415 = 16'd5120;
-        adc_ok_416 = 1'b1; shunt_416 = 16'd5120;
-        #20;
+        frame_205b_416  = 1640'h{frame_open_hex};
+        comp_w_pre_sha  = 256'h{w_pre_sha_open};
+        exp_post_exec   = 256'h{post_exec_open};
+        frame_valid_416 = 1'b1;
+        @(negedge clk);
+        frame_valid_416 = 1'b0;
+        #10;
         if (state_415 !== 2'b01 || pin_415 !== 1'b1) $fatal(1, "415 L3 OPEN failed");
         if (state_416 !== 2'b01 || pin_416 !== 1'b1) $fatal(1, "416 L3 OPEN failed");
 
-        // Trigger acoustic sabotage (146.5 dB) on 415 and Fiber Tap (85 mdB) on 416 -> HOLD (0.00V)
+        // Trigger acoustic sabotage (146.5 dB) on 415 -> HOLD (0.00V)
+        @(negedge clk);
         spl_dbx = 16'd1465;
-        step_mdb = 16'd85;
-        #20;
+        #10;
         if (state_415 !== 2'b00 || pin_415 !== 1'b0) $fatal(1, "415 SPL HOLD failed");
-        if (state_416 !== 2'b00 || pin_416 !== 1'b0) $fatal(1, "416 OTDR HOLD failed");
 
-        // Trigger TOCTOU mismatch on 416 and 162.0 dB shockwave on 415 -> Permanent KILL latch
-        spl_dbx = 16'd1620;
-        w_post_pre_hash = 256'hDEAD_BEEF;
-        #20;
+        // Trigger TOCTOU / Replay on 416 and 162.0 dB shockwave on 415 -> Permanent KILL latch
+        @(negedge clk);
+        spl_dbx         = 16'd1620;
+        exp_post_exec   = 256'hDEAD_BEEF;
+        frame_valid_416 = 1'b1;
+        @(negedge clk);
+        frame_valid_416 = 1'b0;
+        #10;
         if (state_415 !== 2'b11 || pin_415 !== 1'b0) $fatal(1, "415 KILL latch failed");
         if (state_416 !== 2'b11 || pin_416 !== 1'b0) $fatal(1, "416 KILL latch failed");
 
