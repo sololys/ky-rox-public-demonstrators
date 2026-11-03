@@ -19,8 +19,12 @@ L2_GATE/evaluate_boundaries.py
 L2_GATE/fpga_capsule_frame_205b_decoder.sv
 L2_GATE/fpga_witness_ledger_engine.py
 L2_GATE/registry_b_dlatch_telemetry_protocol.py
+L2_GATE/spec414_415_416_gothenburg_corridor_gate.py
+L2_GATE/spec415_kpod_cdc_gate.sv
+L2_GATE/spec416_infranett_witness_gate.sv
 L2_GATE/test_adversarial_capsule_gate_harness.py
 L2_GATE/test_registry_b_dlatch_telemetry_protocol.py
+L2_GATE/test_spec414_415_416_gothenburg_corridor_gate.py
 L3_WITNESS/audit_log.jsonl
 Makefile
 README.md
