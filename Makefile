@@ -10,6 +10,7 @@ hold:
 
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py
+	@PYTHONPATH=L1_LAW python3 -m unittest -q L1_LAW/test_ky_parser.py
 	@python3 L2_GATE/evaluate_boundaries.py
 	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_adversarial_capsule_gate_harness.py
 	@python3 run_demo.py

@@ -59,15 +59,19 @@ Every demonstrator in [`artifacts/microtests/`](artifacts/microtests/) and [`mon
 
 ---
 
-## IV. Claim & Authority Boundary
+## IV. Claim & Authority Boundary (KY v1.5-MASTER & GKO Lab Note Seksjon 5)
 
 ```text
-PUBLIC_TREE_GATE        = PASS
-MICROTEST_GATE          = PASS (8 suites / 48 unit tests + 10/10 L1_LAW)
-SCOPE                   = EXACT_CHECKED_TREE_ONLY
-CLAIM_STATUS            = HOLD (INSPIRED_BY != IMPLEMENTS != PROVES)
-PHYSICAL_AUTHORITY      = NONE (0.00 V DC)
-OPERATIONAL_AUTHORITY   = NONE
+PUBLIC_TREE_GATE             = PASS
+MICROTEST_GATE               = PASS (8 suites / 48 unit tests + L1_LAW + L2_GATE)
+SCOPE                        = EXACT_CHECKED_TREE_ONLY
+CLAIM_STATUS                 = HOLD (INSPIRED_BY != IMPLEMENTS != PROVES)
+SIMULATION_CLASSIFICATION    = OPEN_AS_SOFTWARE_DEMONSTRATION (0xABCDEF00 — deterministisk demonstrert i simuleringsmotoren)
+HARDWARE_D_LATCH_ACTUATION   = HOLD (Registry B: Ikke fysisk målt silisium-spenning; avventer GPIO/FPGA HIL-logg)
+STANDALONE_HASH_OR_UNICODE   = KILL (Registry A: D3 krever eksplisitt skjema/versjon + eksternt anker / HMAC / fysisk WORM)
+CANONICAL_KY_GLYPH           = ✓(○ → ∅ → □ → ◇ → ●)#! ▸ (Alternativ A: ● kun D2-node, ! er commit_event, # er witness_hash)
+PHYSICAL_AUTHORITY           = NONE (0.00 V DC)
+OPERATIONAL_AUTHORITY        = NONE
 ```
 
 ---
