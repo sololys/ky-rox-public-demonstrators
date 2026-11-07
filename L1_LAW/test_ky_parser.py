@@ -28,7 +28,13 @@ try:
         KYGrammarEngine,
         SomaticCampaignCandidate,
         WitnessCapsule205B,
+        L2PosixPtyLoopbackBridge,
+        BalkongLinter,
+        UnclosedTrajectoryLeakException,
+        CantileverOverloadException,
         evaluate_ky_expression,
+        to_ascii,
+        from_ascii,
         verify_rox_involution,
         evaluate_plasma_risk,
         D1_ALLOWED_OPERATORS,
@@ -43,7 +49,13 @@ except ImportError:
         KYGrammarEngine,
         SomaticCampaignCandidate,
         WitnessCapsule205B,
+        L2PosixPtyLoopbackBridge,
+        BalkongLinter,
+        UnclosedTrajectoryLeakException,
+        CantileverOverloadException,
         evaluate_ky_expression,
+        to_ascii,
+        from_ascii,
         verify_rox_involution,
         evaluate_plasma_risk,
         D1_ALLOWED_OPERATORS,
@@ -329,6 +341,91 @@ class TestKYEngineV15Master(unittest.TestCase):
                 rtl_ok, _, msg = res.capsule_205b.rtl_verify_o1()
                 self.assertTrue(rtl_ok, msg)
                 self.assertEqual(len(res.capsule_205b.raw_205b), 205)
+
+    def test_06_spor2_roundtrip_codec_unicode_ascii_ast(self):
+        """Spor 2: Verifiserer toveis konvertering to_ascii(expr) og from_ascii(ky_block) med decode(encode(x)) == x."""
+        expr_full = "↻(○ ⇒ ∅ → □ → ◊ → 𝒪 ↦ ●)#! ▶"
+        ascii_blk = to_ascii(expr_full)
+        self.assertEqual(
+            ascii_blk,
+            "KY[ validate(raw => estimate -> struct -> viability -> authorized !> committed) audit(hash,commit) gate=open ]",
+        )
+        self.assertEqual(from_ascii(ascii_blk), expr_full)
+
+        expr_hold = "↻(□ ~ □↺) ∥"
+        ascii_hold = to_ascii(expr_hold)
+        self.assertEqual(from_ascii(ascii_hold), expr_hold)
+
+        expr_kill = "(∅ → □) ∉K ✕"
+        ascii_kill = to_ascii(expr_kill)
+        self.assertEqual(from_ascii(ascii_kill), expr_kill)
+
+    def test_07_spor1_l2_posix_pty_serial_loopback_247b_and_rs208(self):
+        """Spor 1: Verifiserer 247-byte L2 wire-frame + RS(208,205) over ekte POSIX PTY (/dev/pts/*)."""
+        res = evaluate_ky_expression("↻(○ ⇒ ∅ → □ → ◊ → 𝒪 ↦ ●)#! ▶")
+        self.assertIsNotNone(res.capsule_205b)
+        bridge = L2PosixPtyLoopbackBridge()
+
+        # 1. RS(208,205) paritet over GF(2^8)
+        rs_parity = bridge.rs208_compute_parity(res.capsule_205b.raw_205b)
+        self.assertEqual(len(rs_parity), 3)
+        self.assertTrue(bridge.rs208_verify(res.capsule_205b.raw_205b + rs_parity))
+
+        # 2. Nominell 247-byte pakke over /dev/pts/* -> 5000 mV OPEN
+        wire_247b = bridge.pack_247b_wire_frame(seq_counter=1, capsule=res.capsule_205b)
+        self.assertEqual(len(wire_247b), 247)
+        pty_ok = bridge.transmit_and_verify_over_pty(wire_247b, rs_parity_3b=rs_parity)
+        self.assertEqual(pty_ok["status"], "L2_LOOPBACK_SIMULATED_EFFECT")
+        self.assertEqual(pty_ok["voltage_mv"], 5000)
+
+        # 3. Enkelt bit-flip i nyttelasten -> KILL_LINK_INTEGRITY (0 mV)
+        corrupted = bytearray(wire_247b)
+        corrupted[42] ^= 0x01
+        pty_flip = bridge.transmit_and_verify_over_pty(bytes(corrupted), rs_parity_3b=rs_parity)
+        self.assertEqual(pty_flip["status"], "KILL_LINK_INTEGRITY")
+        self.assertEqual(pty_flip["voltage_mv"], 0)
+
+        # 4. Trunkert ramme (< 247 B) -> KILL_TRUNCATED_FRAME (0 mV)
+        pty_trunc = bridge.transmit_and_verify_over_pty(wire_247b[:140], timeout_sec=0.02)
+        self.assertEqual(pty_trunc["status"], "KILL_TRUNCATED_FRAME")
+        self.assertEqual(pty_trunc["voltage_mv"], 0)
+
+    def test_08_spor3_balkong_linter_omveiens_tektonikk(self):
+        """Spor 3: Verifiserer BalkongLinter mot lukket digresjon, ufullendt lekkasje og overbelastet balkong."""
+        linter = BalkongLinter(max_cantilever_ratio=0.50)
+        anchor_prose = " ".join(["granitt"] * 120)
+
+        # 1. Gyldig lukket balkong: [∘Φ-UTFLUKT] -> [⊠SOMA-ANKER] -> [⊙ ≺ 1 // POINCARÉ-LÅS]
+        valid_md = (
+            f"# Kapittel 1\n{anchor_prose}\n"
+            "[∘Φ-UTFLUKT // 0,00 V DC // Rev¹]\n"
+            "En kort utflukt til Via Fondazza med [⊠SOMA-ANKER: 5,0 mm kald luft og fastnøkkel].\n"
+            "[⊙ ≺ 1 // POINCARÉ-LÅS // 5,00 V DC // ΔR = 0]\n"
+        )
+        res_ok = linter.lint_text(valid_md, strict_raise=True)
+        self.assertTrue(res_ok.passed)
+        self.assertEqual(res_ok.gate_verdict, "OPEN")
+        self.assertEqual(res_ok.voltage_mv, 5000)
+
+        # 2. Ufullendt lekkasje (mangler POINCARÉ-LÅS før neste kapittel) -> UnclosedTrajectoryLeakException
+        leak_md = (
+            f"# Kapittel 1\n{anchor_prose}\n"
+            "[∘Φ-UTFLUKT // 0,00 V DC // Rev¹]\n"
+            "Utflukt med [⊠SOMA-ANKER] som glemmer å lukke låsen.\n"
+            "## Kapittel 1.2\nMer tekst.\n"
+        )
+        with self.assertRaises(UnclosedTrajectoryLeakException):
+            linter.lint_text(leak_md, strict_raise=True)
+
+        # 3. Overbelastet balkong (M_boy > Omega_kjerne) -> CantileverOverloadException
+        heavy_excursion = " ".join(["digresjon"] * 100)
+        overload_md = (
+            "# Kort kapittel\nKun ti ord i hovedbjelken her nå.\n"
+            f"[∘Φ-UTFLUKT // 0,00 V DC // Rev¹]\n{heavy_excursion} [⊠SOMA-ANKER]\n"
+            "[⊙ ≺ 1 // POINCARÉ-LÅS // 5,00 V DC // ΔR = 0]\n"
+        )
+        with self.assertRaises(CantileverOverloadException):
+            linter.lint_text(overload_md, strict_raise=True)
 
 
 if __name__ == '__main__':

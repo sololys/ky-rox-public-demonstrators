@@ -1812,6 +1812,10 @@ def evaluate_ky_expression(
         final_status=gate_byte,
     )
 
+    ascii_block = to_ascii(expr)
+    reconstructed_u = from_ascii(ascii_block)
+    rt_ok = (reconstructed_u == expr.strip())
+
     return EvalResult(
         syntax="valid",
         type_status="valid" if type_valid else "invalid",
@@ -1820,8 +1824,481 @@ def evaluate_ky_expression(
         voltage_mv=comp_mv,
         d_latch_voltage=5.00 if comp_gate == "OPEN" else 0.00,
         a5_gate_voltage=comp_mv / 1000.0,
+        expression_unicode=expr.strip(),
+        expression_ascii=ascii_block,
+        roundtrip_ok=rt_ok,
         reasons=reasons,
         capsule_205b=capsule,
     )
+
+
+# =====================================================================
+# 6. SPOR 2: ROUND-TRIP CODEC (Unicode Glyph <-> Canonical KY-ASCII <-> AST)
+# =====================================================================
+
+CODEC_NODE_TO_ASCII: Dict[str, str] = {
+    "○": "raw",
+    "∅": "estimate",
+    "□": "struct",
+    "△": "threshold",
+    "◊": "viability",
+    "◇": "viability",
+    "♢": "viability",
+    "𝒪": "authorized",
+    "⊙": "authorized",
+    "●": "committed",
+}
+
+CODEC_ASCII_TO_NODE: Dict[str, str] = {
+    "raw": "○",
+    "estimate": "∅",
+    "struct": "□",
+    "threshold": "△",
+    "viability": "◊",
+    "authorized": "𝒪",
+    "committed": "●",
+}
+
+CODEC_FLOW_TO_ASCII: Dict[str, str] = {
+    "→": "->",
+    "~": "~",
+    "⇒": "=>",
+    "↦": "!>",
+}
+
+CODEC_ASCII_TO_FLOW: Dict[str, str] = {v: k for k, v in CODEC_FLOW_TO_ASCII.items()}
+
+CODEC_GATE_TO_ASCII: Dict[str, str] = {
+    "▶": "open",
+    "▸": "open",
+    "►": "open",
+    "∥": "hold",
+    "‖": "hold",
+    "⏸": "hold",
+    "✕": "kill",
+    "X": "kill",
+}
+
+CODEC_ASCII_TO_GATE: Dict[str, str] = {
+    "open": "▶",
+    "hold": "∥",
+    "kill": "✕",
+}
+
+
+def to_ascii(expr: str) -> str:
+    """
+    Konverterer et KY v1.5-MASTER Unicode-uttrykk til kanonisk KY[...] ASCII-blokk:
+    '↻(○ ⇒ ∅ → □ → ◊ → 𝒪 ↦ ●)#! ▶'
+      -> 'KY[ validate(raw => estimate -> struct -> viability -> authorized !> committed) audit(hash,commit) gate=open ]'
+    """
+    s = expr.strip()
+    if not s or s[-1] not in CODEC_GATE_TO_ASCII:
+        return "INVALID_ASCII"
+    gate_ascii = CODEC_GATE_TO_ASCII[s[-1]]
+    body = s[:-1].strip()
+
+    has_validate = body.startswith("↻") or body.startswith("✓") or body.startswith("⊢")
+    if has_validate:
+        body = body[1:].strip()
+
+    if "(" not in body or ")" not in body:
+        return "INVALID_ASCII"
+    open_idx = body.find("(")
+    close_idx = body.rfind(")")
+    chain_str = body[open_idx + 1 : close_idx].strip()
+    suffix_str = body[close_idx + 1 :].strip()
+
+    tokens_ascii: List[str] = []
+    i = 0
+    expect_node = True
+    while i < len(chain_str):
+        ch = chain_str[i]
+        if ch.isspace():
+            i += 1
+            continue
+        if expect_node:
+            if ch not in CODEC_NODE_TO_ASCII:
+                return "INVALID_ASCII"
+            node_name = CODEC_NODE_TO_ASCII[ch]
+            i += 1
+            if i < len(chain_str) and chain_str[i] == "↺":
+                node_name = f"{node_name}↺"
+                i += 1
+            tokens_ascii.append(node_name)
+            expect_node = False
+        else:
+            if ch not in CODEC_FLOW_TO_ASCII:
+                return "INVALID_ASCII"
+            tokens_ascii.append(CODEC_FLOW_TO_ASCII[ch])
+            expect_node = True
+            i += 1
+
+    wrapper = "validate" if has_validate else "chain"
+    clauses = [f"{wrapper}({' '.join(tokens_ascii)})"]
+
+    rem = suffix_str
+    for vm in sorted(VALIDITY_MARKS, key=len, reverse=True):
+        if vm in rem:
+            clauses.append(f"mark({vm})")
+            rem = rem.replace(vm, " ")
+            break
+
+    audits: List[str] = []
+    for ch in rem:
+        if ch == "#":
+            audits.append("hash")
+        elif ch == "!":
+            audits.append("commit")
+    if audits:
+        clauses.append(f"audit({','.join(audits)})")
+
+    clauses.append(f"gate={gate_ascii}")
+    return f"KY[ {' '.join(clauses)} ]"
+
+
+def from_ascii(ky_block: str) -> str:
+    """
+    Reverserer kanonisk KY[...] ASCII-blokk tilbake til KY v1.5-MASTER Unicode-uttrykk:
+    decode(encode(x)) == x.
+    """
+    s = ky_block.strip()
+    if not (s.startswith("KY[") and s.endswith("]")):
+        return ""
+    inner = s[3:-1].strip()
+
+    has_validate = inner.startswith("validate(")
+    if not (has_validate or inner.startswith("chain(")):
+        return ""
+    open_p = inner.find("(")
+    close_p = inner.find(")", open_p)
+    if open_p == -1 or close_p == -1:
+        return ""
+
+    chain_tokens = inner[open_p + 1 : close_p].strip().split()
+    if len(chain_tokens) < 3 or len(chain_tokens) % 2 == 0:
+        return ""
+
+    glyph_parts: List[str] = []
+    for idx, tok in enumerate(chain_tokens):
+        if idx % 2 == 0:
+            has_loop = tok.endswith("↺")
+            base_tok = tok[:-1] if has_loop else tok
+            if base_tok not in CODEC_ASCII_TO_NODE:
+                return ""
+            node_g = CODEC_ASCII_TO_NODE[base_tok]
+            glyph_parts.append(f"{node_g}↺" if has_loop else node_g)
+        else:
+            if tok not in CODEC_ASCII_TO_FLOW:
+                return ""
+            glyph_parts.append(CODEC_ASCII_TO_FLOW[tok])
+
+    rest = inner[close_p + 1 :].strip()
+    v_mark = ""
+    if "mark(" in rest:
+        m0 = rest.find("mark(") + 5
+        m1 = rest.find(")", m0)
+        v_mark = f" {rest[m0:m1]}"
+
+    aud_s = ""
+    if "audit(" in rest:
+        a0 = rest.find("audit(") + 6
+        a1 = rest.find(")", a0)
+        items = [x.strip() for x in rest[a0:a1].split(",")]
+        aud_s = "".join("#" if x == "hash" else ("!" if x == "commit" else "") for x in items)
+
+    if "gate=" not in rest:
+        return ""
+    g_name = rest.split("gate=")[-1].strip()
+    if g_name not in CODEC_ASCII_TO_GATE:
+        return ""
+    gate_g = CODEC_ASCII_TO_GATE[g_name]
+
+    prefix = "↻" if has_validate else ""
+    return f"{prefix}({' '.join(glyph_parts)}){v_mark}{aud_s} {gate_g}"
+
+
+# =====================================================================
+# 7. SPOR 1: L2 POSIX PTY SERIAL LOOPBACK & RS(208,205) WIRE HARNESS
+# =====================================================================
+
+class L2PosixPtyLoopbackBridge:
+    """
+    L2 Wire-Frame & POSIX PTY (/dev/pts/*) Loopback Bridge for SPEC-213 / SPEC-416:
+      - 247-byte L2 Wire-Frame: [0xAA, 0x55] (2B) + seq_counter (8B) + 205B Capsule + HMAC-SHA256 (32B) = 247 B
+      - RS(208, 205) over GF(2^8) (primitive polynomial 0x11D) parity check (3B)
+    """
+
+    SYNC_0 = 0xAA
+    SYNC_1 = 0x55
+    HEADER_FMT = "<BBQ"  # 10 bytes
+    PAYLOAD_LEN = 205
+    HMAC_LEN = 32
+    WIRE_FRAME_LEN = 247
+
+    def __init__(self, hmac_key: bytes = b"L1_CONSTITUTIONAL_GATE_KEY_2026") -> None:
+        self._hmac_key = hmac_key
+
+    @staticmethod
+    def _gf256_mul(a: int, b: int) -> int:
+        p = 0
+        for _ in range(8):
+            if b & 1:
+                p ^= a
+            hi = a & 0x80
+            a = (a << 1) & 0xFF
+            if hi:
+                a ^= 0x1D  # x^8 + x^4 + x^3 + x^2 + 1 (0x11D)
+            b >>= 1
+        return p
+
+    @classmethod
+    def rs208_compute_parity(cls, data_205b: bytes) -> bytes:
+        """Beregner 3-byte Reed-Solomon RS(208,205) paritet over GF(2^8) med generator (x-2)(x-4)(x-8) = x^3 + 14x^2 + 56x + 64."""
+        if len(data_205b) != 205:
+            raise ValueError("RS(208,205) requires exact 205-byte capsule")
+        p0, p1, p2 = 0, 0, 0
+        for b in data_205b:
+            fb = b ^ p2
+            p2 = p1 ^ cls._gf256_mul(14, fb)
+            p1 = p0 ^ cls._gf256_mul(56, fb)
+            p0 = cls._gf256_mul(64, fb)
+        return bytes([p2, p1, p0])
+
+    @classmethod
+    def rs208_verify(cls, codeword_208b: bytes) -> bool:
+        if len(codeword_208b) != 208:
+            return False
+        expected_p = cls.rs208_compute_parity(codeword_208b[:205])
+        return codeword_208b[205:] == expected_p
+
+    def pack_247b_wire_frame(self, seq_counter: int, capsule: WitnessCapsule205B) -> bytes:
+        import hmac as _hmac
+        raw_205b = capsule.raw_205b
+        if len(raw_205b) != self.PAYLOAD_LEN:
+            raise ValueError(f"Expected 205B capsule, got {len(raw_205b)}")
+        header = struct.pack(self.HEADER_FMT, self.SYNC_0, self.SYNC_1, seq_counter)
+        body = header + raw_205b
+        mac = _hmac.new(self._hmac_key, body, hashlib.sha256).digest()
+        frame = body + mac
+        assert len(frame) == self.WIRE_FRAME_LEN
+        return frame
+
+    def transmit_and_verify_over_pty(
+        self,
+        wire_frame: bytes,
+        rs_parity_3b: Optional[bytes] = None,
+        timeout_sec: float = 0.05,
+    ) -> Dict[str, Any]:
+        """Sender bytes over en ekte POSIX PTY (/dev/pts/*) i raw-modus og verifiserer mottatt 247B ramme."""
+        import hmac as _hmac
+        import os as _os
+        import pty as _pty
+        import select as _select
+        import termios as _termios
+        import tty as _tty
+
+        master_fd, slave_fd = _pty.openpty()
+        try:
+            _tty.setraw(master_fd, when=_termios.TCSANOW)
+            _tty.setraw(slave_fd, when=_termios.TCSANOW)
+            _os.write(slave_fd, wire_frame)
+
+            buf = bytearray()
+            while len(buf) < self.WIRE_FRAME_LEN:
+                rlist, _, _ = _select.select([master_fd], [], [], timeout_sec)
+                if not rlist:
+                    return {
+                        "status": "KILL_TRUNCATED_FRAME",
+                        "voltage_mv": 0,
+                        "bytes_received": len(buf),
+                        "expected_bytes": self.WIRE_FRAME_LEN,
+                    }
+                chunk = _os.read(master_fd, self.WIRE_FRAME_LEN - len(buf))
+                if not chunk:
+                    break
+                buf.extend(chunk)
+
+            if len(buf) < self.WIRE_FRAME_LEN:
+                return {
+                    "status": "KILL_TRUNCATED_FRAME",
+                    "voltage_mv": 0,
+                    "bytes_received": len(buf),
+                    "expected_bytes": self.WIRE_FRAME_LEN,
+                }
+
+            raw = bytes(buf)
+            sync0, sync1, seq_counter = struct.unpack(self.HEADER_FMT, raw[:10])
+            if sync0 != self.SYNC_0 or sync1 != self.SYNC_1:
+                return {"status": "KILL_SYNC_HEADER_CORRUPT", "voltage_mv": 0}
+
+            body = raw[:215]
+            rx_mac = raw[215:247]
+            calc_mac = _hmac.new(self._hmac_key, body, hashlib.sha256).digest()
+            if not _hmac.compare_digest(rx_mac, calc_mac):
+                return {"status": "KILL_LINK_INTEGRITY", "voltage_mv": 0}
+
+            payload_205b = raw[10:215]
+            if rs_parity_3b is not None and not self.rs208_verify(payload_205b + rs_parity_3b):
+                return {"status": "KILL_RS208_SYNDROME", "voltage_mv": 0}
+
+            rx_cap = WitnessCapsule205B(w_pre_bytes=payload_205b[:119], w_post_bytes=payload_205b[119:])
+            rtl_ok, final_st, rtl_msg = rx_cap.rtl_verify_o1()
+            if not rtl_ok:
+                return {"status": f"KILL_{rtl_msg}", "voltage_mv": 0, "rtl_code": final_st}
+
+            mv = 5000 if final_st == 0x01 else (2500 if final_st == 0x02 else 0)
+            return {
+                "status": "L2_LOOPBACK_SIMULATED_EFFECT" if final_st == 0x01 else "L2_LOOPBACK_HOLD_OR_KILL",
+                "voltage_mv": mv,
+                "seq_counter": seq_counter,
+                "rtl_code": final_st,
+                "bytes_received": len(raw),
+            }
+        finally:
+            _os.close(master_fd)
+            _os.close(slave_fd)
+
+
+# =====================================================================
+# 8. SPOR 3: BALKONG-LINTER FOR OMVEIENS TEKTONIKK
+# =====================================================================
+
+class UnclosedTrajectoryLeakException(Exception):
+    """Kastes når en [∘Φ-UTFLUKT] mangler [⊠SOMA-ANKER] eller [⊙ ≺ 1 // POINCARÉ-LÅS]."""
+
+
+class CantileverOverloadException(Exception):
+    """Kastes når en digresjons ordmasse overstiger ankerkapittelets bæreevne (M_boy > Omega_kjerne)."""
+
+
+@dataclass(frozen=True)
+class BalkongAuditResult:
+    file_path: str
+    passed: bool
+    gate_verdict: str
+    voltage_mv: int
+    excursions_opened: int
+    excursions_closed: int
+    soma_anchors_found: int
+    structural_sigils_found: int
+    chapter_words: int
+    excursion_words: int
+    cantilever_ratio: float
+    errors: Tuple[str, ...] = field(default_factory=tuple)
+
+
+class BalkongLinter:
+    """Deterministisk manuskript-linter for Omveiens Tektonikk (Kapittel 1.1.1 & 8.1)."""
+
+    OPEN_PATTERN = re.compile(r"\[\s*(?:∘\s*Φ-UTFLUKT|utflukt\s*//\s*Rev¹)[^\]]*\]", re.IGNORECASE)
+    SOMA_PATTERN = re.compile(r"\[\s*(?:⊠\s*SOMA-ANKER|Π_orth|Kontrastvæske)[^\]]*\]", re.IGNORECASE)
+    CLOSE_PATTERN = re.compile(r"\[\s*⊙\s*≺\s*1\s*//\s*POINCAR[ÉE]-L[ÅA]S[^\]]*\]", re.IGNORECASE)
+    HEADING_PATTERN = re.compile(r"^#{1,2}\s+\S+", re.MULTILINE)
+    SIGIL_PATTERN = re.compile(
+        r"(BORDA-CARNOT-RAMPE|ROSETTA-SVEIS|POINCAR[ÉE]-L[ÅA]S|INSPIRED_BY\s*!=\s*IMPLEMENTS|RESET_BY_L01)",
+        re.IGNORECASE,
+    )
+
+    def __init__(self, max_cantilever_ratio: float = 0.50) -> None:
+        self.max_cantilever_ratio = max_cantilever_ratio
+
+    def lint_text(self, text: str, file_label: str = "<memory>", strict_raise: bool = False) -> BalkongAuditResult:
+        lines = text.splitlines()
+        total_words = len(text.split())
+        sigils_count = len(self.SIGIL_PATTERN.findall(text))
+
+        in_excursion = False
+        has_soma_in_current = False
+        open_line_no = 0
+        current_excursion_words = 0
+        total_excursion_words = 0
+        opened_count = 0
+        closed_count = 0
+        soma_count = 0
+        errors: List[str] = []
+
+        for idx, line in enumerate(lines, start=1):
+            if in_excursion and self.HEADING_PATTERN.match(line):
+                msg = (
+                    f"{file_label}:{idx}: UnclosedTrajectoryLeakException: Ny overskrift '{line.strip()}' "
+                    f"før [⊙ ≺ 1 // POINCARÉ-LÅS] for utflukt åpnet på linje {open_line_no}."
+                )
+                errors.append(msg)
+                if strict_raise:
+                    raise UnclosedTrajectoryLeakException(msg)
+                in_excursion = False
+
+            if self.OPEN_PATTERN.search(line):
+                if in_excursion:
+                    msg = (
+                        f"{file_label}:{idx}: UnclosedTrajectoryLeakException: Re-åpning av [∘Φ-UTFLUKT] "
+                        f"før forrige utflukt (linje {open_line_no}) var lukket."
+                    )
+                    errors.append(msg)
+                    if strict_raise:
+                        raise UnclosedTrajectoryLeakException(msg)
+                in_excursion = True
+                has_soma_in_current = False
+                open_line_no = idx
+                current_excursion_words = 0
+                opened_count += 1
+
+            if in_excursion:
+                current_excursion_words += len(line.split())
+                if self.SOMA_PATTERN.search(line):
+                    has_soma_in_current = True
+                    soma_count += 1
+
+            if self.CLOSE_PATTERN.search(line) and in_excursion:
+                if not has_soma_in_current:
+                    msg = (
+                        f"{file_label}:{idx}: UnclosedTrajectoryLeakException: Utflukt (linje {open_line_no}..{idx}) "
+                        f"lukket med [⊙ ≺ 1 // POINCARÉ-LÅS] uten [⊠SOMA-ANKER]!"
+                    )
+                    errors.append(msg)
+                    if strict_raise:
+                        raise UnclosedTrajectoryLeakException(msg)
+                closed_count += 1
+                total_excursion_words += current_excursion_words
+                in_excursion = False
+
+        if in_excursion:
+            msg = (
+                f"{file_label}:EOF: UnclosedTrajectoryLeakException: Utflukt åpnet på linje {open_line_no} "
+                f"vender aldri hjem til [⊙ ≺ 1 // POINCARÉ-LÅS] før filslutt (Delta R != 0)."
+            )
+            errors.append(msg)
+            if strict_raise:
+                raise UnclosedTrajectoryLeakException(msg)
+
+        anchor_words = max(1, total_words - total_excursion_words)
+        cantilever_ratio = total_excursion_words / float(anchor_words) if opened_count > 0 else 0.0
+        if opened_count > 0 and cantilever_ratio > self.max_cantilever_ratio:
+            msg = (
+                f"{file_label}: CantileverOverloadException: Utkragingsforhold M_boy/Omega_kjerne = "
+                f"{cantilever_ratio:.3f} > {self.max_cantilever_ratio:.3f}."
+            )
+            errors.append(msg)
+            if strict_raise:
+                raise CantileverOverloadException(msg)
+
+        passed = len(errors) == 0
+        return BalkongAuditResult(
+            file_path=file_label,
+            passed=passed,
+            gate_verdict="OPEN" if passed else "KILL",
+            voltage_mv=5000 if passed else 0,
+            excursions_opened=opened_count,
+            excursions_closed=closed_count,
+            soma_anchors_found=soma_count,
+            structural_sigils_found=sigils_count,
+            chapter_words=total_words,
+            excursion_words=total_excursion_words,
+            cantilever_ratio=round(cantilever_ratio, 4),
+            errors=tuple(errors),
+        )
+
+
 
 
