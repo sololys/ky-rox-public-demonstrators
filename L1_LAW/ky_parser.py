@@ -89,7 +89,9 @@ class EvalResult:
     worm_hash: str = ""
     type_check: str = "valid"
     roundtrip_ok: bool = True
-    capsule_205b: Optional[bytes] = None
+    raw_expr: str = ""
+    voltage_mv: int = 0
+    capsule_205b: Optional[Any] = None
 
     @property
     def reason(self) -> str:
@@ -464,6 +466,30 @@ class SomaticCampaignCandidate:
     hangtag_id: str = "KC-ARR-2026-025"
 
 
+def verify_rox_involution(payload: int, mask_pass1: int, mask_pass2: int) -> Tuple[bool, str]:
+    """
+    Sjekker ROX_m(ROX_m(x)) == x og MASK_FROZEN (m_t == m_t').
+    Returnerer (rox_ok, status_code).
+    """
+    if mask_pass1 != mask_pass2:
+        return False, "MASK_MUTATED"
+    c_t = payload ^ mask_pass1
+    roundtrip = c_t ^ mask_pass2
+    if roundtrip != payload:
+        return False, "ROX_FAIL"
+    return True, "ROX_OK"
+
+
+def evaluate_plasma_risk(pi_t: float, tau_open: float = 0.20, tau_kill: float = 0.50) -> str:
+    """Evaluerer epistemisk støy pi_t mot tersklene (0 <= tau_open < tau_kill)."""
+    if pi_t < tau_open:
+        return "PLASMA_OPEN"
+    elif pi_t < tau_kill:
+        return "PLASMA_HOLD"
+    return "PLASMA_KILL"
+
+
+@dataclass(frozen=True)
 class WitnessCapsule205B:
     """
     SPEC-213 / SPEC-416 Canonical 205-Byte (1640-bit) Binary Witness Capsule:
@@ -472,12 +498,94 @@ class WitnessCapsule205B:
       - Involution lock: post.w_pre_hash == pre.w_pre_hash
     """
 
+    w_pre_bytes: bytes = b""
+    w_post_bytes: bytes = b""
+
     W_PRE_STRUCT = struct.Struct("<QQ32sfBH32s32s")   # 8+8+32+4+1+2+32+32 = 119 B
     W_POST_STRUCT = struct.Struct("<QQ32sBfB32s")     # 8+8+32+1+4+1+32    =  86 B
     TOTAL_BYTES = 205
 
     GATE_DECISION_MAP = {"OPEN": 0x01, "HOLD": 0x02, "KILL": 0x03}
     FINAL_STATUS_MAP = {"OPEN": 0x01, "HOLD": 0x02, "KILL": 0x03, "MISMATCH": 0xEE, "TRAP": 0xFF}
+
+    @property
+    def raw_205b(self) -> bytes:
+        return self.w_pre_bytes + self.w_post_bytes
+
+    def __len__(self) -> int:
+        return len(self.raw_205b)
+
+    @staticmethod
+    def build_and_seal(
+        seq_id: int,
+        t_pre_ns: int,
+        t_post_ns: int,
+        candidate_expr: str,
+        kernel_drift: float,
+        gate_code: int,        # 0x01=OPEN, 0x02=HOLD, 0x03=KILL
+        reason_code: int,
+        prev_block_hash: bytes,
+        latch_engaged: int,    # 0x01=ENGAGED, 0x00=DISENGAGED
+        thermo_exhaust_nj: float,
+        final_status: int,     # 0x01=REALIZED, 0x02=HOLD, 0x03=KILL, 0xFF=TRAP
+    ) -> "WitnessCapsule205B":
+        cand_hash = hashlib.sha256(candidate_expr.encode("utf-8")).digest()
+        drift_clean = 0.0 if abs(kernel_drift) == 0.0 else float(kernel_drift)
+        thermo_clean = 0.0 if abs(thermo_exhaust_nj) == 0.0 else float(thermo_exhaust_nj)
+        prev_h = prev_block_hash if len(prev_block_hash) == 32 else hashlib.sha256(prev_block_hash).digest()
+
+        pre_body = struct.pack(
+            "<QQ32sfBH32s",
+            seq_id,
+            t_pre_ns,
+            cand_hash,
+            drift_clean,
+            gate_code & 0xFF,
+            reason_code & 0xFFFF,
+            prev_h,
+        )
+        w_pre_hash = hashlib.sha256(pre_body).digest()
+        w_pre = pre_body + w_pre_hash
+
+        post_body = struct.pack(
+            "<QQ32sBfB",
+            seq_id,
+            t_post_ns,
+            w_pre_hash,
+            latch_engaged & 0xFF,
+            thermo_clean,
+            final_status & 0xFF,
+        )
+        w_post_hash = hashlib.sha256(post_body).digest()
+        w_post = post_body + w_post_hash
+        return WitnessCapsule205B(w_pre_bytes=w_pre, w_post_bytes=w_post)
+
+    def rtl_verify_o1(self, tau_max_ns: int = 30_000_000_000) -> Tuple[bool, int, str]:
+        """
+        Emulerer 1-syklus O(1) sjekk i fpga_capsule_frame_205b_decoder.sv:
+        1. Pakkelengde == 205 B
+        2. pre.seq_id == post.seq_id
+        3. pre.w_pre_hash == post.w_pre_hash (1-syklus involusjonslås)
+        4. 0 <= (t_post - t_pre) <= tau_max_ns (Varslerens Dilemma / HOLD-frist)
+        5. Landauer-eksos > 0 ved REALIZED (0x01)
+        """
+        if len(self.raw_205b) != 205:
+            return False, 0xFF, "TRAP_INVALID_FRAME_LEN"
+
+        pre_seq, t_pre, _, _, gate_dec, _, _, pre_hash = self.W_PRE_STRUCT.unpack(self.w_pre_bytes)
+        post_seq, t_post, post_pre_hash, latch, thermo_nj, final_st, _ = self.W_POST_STRUCT.unpack(self.w_post_bytes)
+
+        if pre_seq != post_seq or pre_hash != post_pre_hash:
+            return False, 0xFF, "TRAP_TAMPER_INVOLUTION_MISMATCH"
+
+        delta_t = t_post - t_pre
+        if delta_t < 0 or delta_t > tau_max_ns:
+            return False, 0xFF, "TRAP_HOLD_DECAY_EXCEEDED"
+
+        if gate_dec == 0x01 and (latch != 0x01 or thermo_nj <= 0.0):
+            return False, 0xEE, "MISMATCH_UNPAID_LANDAUER_OR_LATCH"
+
+        return True, final_st, "RTL_VERIFIED_O1"
 
     @classmethod
     def pack_capsule(
@@ -1445,7 +1553,275 @@ class KYEngine:
             final_verdict=final_gate,
             d_latch_voltage=5.00 if final_gate == "OPEN" else 0.00,
             a5_gate_voltage=5.00 if final_gate == "OPEN" else (2.50 if final_gate == "HOLD" else 0.00),
+            voltage_mv=5000 if final_gate == "OPEN" else (2500 if final_gate == "HOLD" else 0),
             capsule_205b=capsule,
             reasons=tuple(reasons),
         )
+
+
+# =====================================================================
+# 5. KY v1.5-MASTER CANONICAL EXPRESSION EVALUATOR (↻, 𝒪, ◊, ∥, ▶, ✕)
+# =====================================================================
+
+V15_CANON_NODES: Dict[str, str] = {
+    "○": "RAW",
+    "∅": "ESTIMATE",
+    "□": "STRUCT",
+    "△": "THRESHOLD",
+    "◇": "VIABILITY",
+    "◊": "VIABILITY",
+    "♢": "VIABILITY",
+    "⊙": "AUTHORIZED",
+    "𝒪": "AUTHORIZED",
+    "●": "COMMITTED",
+}
+
+V15_CANON_FLOWS: Dict[str, str] = {
+    "→": "DIRECT",
+    "~": "DRIFT",
+    "⇒": "PROJECT",
+    "↦": "COMMIT_FLOW",
+}
+
+V15_CANON_GATES: Dict[str, Tuple[str, int]] = {
+    "▶": ("OPEN", 5000),
+    "▸": ("OPEN", 5000),
+    "►": ("OPEN", 5000),
+    "∥": ("HOLD", 2500),
+    "‖": ("HOLD", 2500),
+    "⏸": ("HOLD", 2500),
+    "✕": ("KILL", 0),
+    "X": ("KILL", 0),
+}
+
+V15_LEGAL_TRANSITIONS = {
+    ("RAW", "ESTIMATE"),
+    ("RAW", "STRUCT"),          # Kun gyldig med eksplisitt '↻' eller '⊢'
+    ("ESTIMATE", "STRUCT"),
+    ("STRUCT", "STRUCT"),       # Stabilisering under '~' eller '↺'
+    ("STRUCT", "THRESHOLD"),
+    ("STRUCT", "VIABILITY"),
+    ("STRUCT", "AUTHORIZED"),
+    ("STRUCT", "COMMITTED"),    # Betinget: Krever '#' og '!' i suffiks
+    ("THRESHOLD", "VIABILITY"),
+    ("VIABILITY", "VIABILITY"),
+    ("VIABILITY", "AUTHORIZED"),
+    ("VIABILITY", "COMMITTED"), # Betinget: Krever '#' og '!' i suffiks
+    ("AUTHORIZED", "COMMITTED"),
+}
+
+
+def evaluate_ky_expression(
+    expr: str,
+    rox_payload: int = 0xA5A5,
+    rox_mask_1: int = 0x5A5A,
+    rox_mask_2: int = 0x5A5A,
+    plasma_pi: float = 0.05,
+) -> EvalResult:
+    """
+    Parser og evaluerer et KY v1.5-MASTER uttrykk med 205-byte RTL vitnekapsel.
+    Kanonisk form: ↻(node flow node ...) [validity] [audit/time] gate
+    """
+    s = expr.strip()
+    reasons: List[str] = []
+
+    if not s or s[-1] not in V15_CANON_GATES:
+        return EvalResult(
+            syntax="invalid",
+            type_status="invalid",
+            admissibility="kill",
+            gate="KILL",
+            voltage_mv=0,
+            reasons=["Missing or invalid gate glyph"],
+        )
+
+    declared_gate_glyph = s[-1]
+    declared_gate, _ = V15_CANON_GATES[declared_gate_glyph]
+    body = s[:-1].strip()
+
+    has_prefix_validate = body.startswith("↻") or body.startswith("✓") or body.startswith("⊢")
+    if has_prefix_validate:
+        body = body[1:].strip()
+
+    if "(" not in body or ")" not in body:
+        return EvalResult(
+            syntax="invalid",
+            type_status="invalid",
+            admissibility="kill",
+            gate="KILL",
+            voltage_mv=0,
+            reasons=["Missing parentheses around chain"],
+        )
+
+    open_idx = body.find("(")
+    close_idx = body.rfind(")")
+    if open_idx > 0 or close_idx < open_idx:
+        return EvalResult(
+            syntax="invalid",
+            type_status="invalid",
+            admissibility="kill",
+            gate="KILL",
+            voltage_mv=0,
+            reasons=["Malformed chain parentheses"],
+        )
+
+    chain_str = body[open_idx + 1 : close_idx].strip()
+    suffix_str = body[close_idx + 1 :].strip()
+
+    nodes_seq: List[str] = []
+    flows_seq: List[str] = []
+    has_loop = False
+
+    i = 0
+    expect_node = True
+    while i < len(chain_str):
+        ch = chain_str[i]
+        if ch.isspace():
+            i += 1
+            continue
+        if expect_node:
+            if ch in V15_CANON_NODES:
+                nodes_seq.append(V15_CANON_NODES[ch])
+                expect_node = False
+                i += 1
+            else:
+                return EvalResult(
+                    syntax="invalid",
+                    type_status="invalid",
+                    admissibility="kill",
+                    gate="KILL",
+                    voltage_mv=0,
+                    reasons=[f"Unexpected node token: {ch}"],
+                )
+        else:
+            if ch in V15_CANON_FLOWS:
+                flows_seq.append(ch)
+                expect_node = True
+                i += 1
+            elif ch == "↺":
+                has_loop = True
+                i += 1
+            elif chain_str[i : i + 2] == "ΔK":
+                i += 2
+            elif ch in FIELD_MARKS:
+                i += 1
+            else:
+                return EvalResult(
+                    syntax="invalid",
+                    type_status="invalid",
+                    admissibility="kill",
+                    gate="KILL",
+                    voltage_mv=0,
+                    reasons=[f"Unexpected flow/field token: {ch}"],
+                )
+
+    if expect_node or len(nodes_seq) < 2:
+        return EvalResult(
+            syntax="invalid",
+            type_status="invalid",
+            admissibility="kill",
+            gate="KILL",
+            voltage_mv=0,
+            reasons=["Chain must contain at least one transition (A -> B)"],
+        )
+
+    validity_found: List[str] = []
+    audit_found: List[str] = []
+    rem = suffix_str
+    for v_mark in sorted(VALIDITY_MARKS, key=len, reverse=True):
+        if v_mark in rem:
+            validity_found.append(v_mark)
+            rem = rem.replace(v_mark, " ")
+    for t_mark in sorted(TIME_MARKS | {"⊙≺1", "1≺⊙"}, key=len, reverse=True):
+        if t_mark in rem:
+            rem = rem.replace(t_mark, " ")
+    for ch in rem:
+        if ch in AUDIT_MARKS:
+            audit_found.append(ch)
+        elif not ch.isspace():
+            return EvalResult(
+                syntax="invalid",
+                type_status="invalid",
+                admissibility="kill",
+                gate="KILL",
+                voltage_mv=0,
+                reasons=[f"Illegal suffix token (Note: '●' is node-only): {ch}"],
+            )
+
+    rox_ok, rox_msg = verify_rox_involution(rox_payload, rox_mask_1, rox_mask_2)
+    plasma_status = evaluate_plasma_risk(plasma_pi)
+
+    type_valid = True
+    for idx in range(len(nodes_seq) - 1):
+        src, dst = nodes_seq[idx], nodes_seq[idx + 1]
+        if (src, dst) not in V15_LEGAL_TRANSITIONS:
+            type_valid = False
+            reasons.append(f"Illegal transition: {src} -> {dst}")
+
+    touches_committed = "COMMITTED" in nodes_seq or "↦" in flows_seq
+    has_full_audit = ("#" in audit_found) and ("!" in audit_found)
+
+    if not type_valid:
+        comp_adm, comp_gate, comp_mv = "kill", "KILL", 0
+    elif not rox_ok or plasma_status == "PLASMA_KILL":
+        comp_adm, comp_gate, comp_mv = "kill", "KILL", 0
+        reasons.append(f"ROX/Plasma failure: {rox_msg}, {plasma_status}")
+    elif any(m in validity_found for m in ("∉K", "⊬", "≠")):
+        comp_adm, comp_gate, comp_mv = "kill", "KILL", 0
+        reasons.append(f"Negative validity mark forces KILL: {validity_found}")
+    elif touches_committed and not has_full_audit:
+        comp_adm, comp_gate, comp_mv = "kill", "KILL", 0
+        reasons.append("Irreversible transition to COMMITTED requires '#' (witness) and '!' (commit)")
+    elif plasma_status == "PLASMA_HOLD" or ("~" in flows_seq and not touches_committed) or (has_loop and not touches_committed):
+        comp_adm, comp_gate, comp_mv = "hold", "HOLD", 2500
+        reasons.append("Expression in reversible stabilization / HOLD envelope")
+    elif has_prefix_validate or any(m in validity_found for m in ("∈K", "⊢")):
+        comp_adm, comp_gate, comp_mv = "pass", "OPEN", 5000
+        reasons.append("Expression passes structural, ROX, and admissibility checks")
+    else:
+        comp_adm, comp_gate, comp_mv = "kill", "KILL", 0
+        reasons.append("Missing validation operator '↻' or positive validity mark")
+
+    if declared_gate != comp_gate:
+        reasons.append(f"Gate mismatch: declared {declared_gate} but computed {comp_gate}")
+        return EvalResult(
+            syntax="valid",
+            type_status="valid" if type_valid else "invalid",
+            admissibility="kill",
+            gate="KILL",
+            voltage_mv=0,
+            reasons=reasons,
+        )
+
+    reasons.append("Gate matches computed status")
+
+    gate_byte = {"OPEN": 0x01, "HOLD": 0x02, "KILL": 0x03}[comp_gate]
+    latch_byte = 0x01 if comp_gate == "OPEN" else 0x00
+    thermo_nj = 130.0 if comp_gate == "OPEN" else 0.008
+    capsule = WitnessCapsule205B.build_and_seal(
+        seq_id=1,
+        t_pre_ns=1_000_000_000,
+        t_post_ns=1_005_000_000,
+        candidate_expr=expr,
+        kernel_drift=0.0 if comp_gate != "KILL" else 2.0,
+        gate_code=gate_byte,
+        reason_code=0x0000 if comp_gate == "OPEN" else 0x0400,
+        prev_block_hash=b"\x00" * 32,
+        latch_engaged=latch_byte,
+        thermo_exhaust_nj=thermo_nj,
+        final_status=gate_byte,
+    )
+
+    return EvalResult(
+        syntax="valid",
+        type_status="valid" if type_valid else "invalid",
+        admissibility=comp_adm,
+        gate=comp_gate,
+        voltage_mv=comp_mv,
+        d_latch_voltage=5.00 if comp_gate == "OPEN" else 0.00,
+        a5_gate_voltage=comp_mv / 1000.0,
+        reasons=reasons,
+        capsule_205b=capsule,
+    )
+
 

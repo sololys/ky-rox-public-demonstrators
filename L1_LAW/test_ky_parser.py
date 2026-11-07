@@ -28,6 +28,9 @@ try:
         KYGrammarEngine,
         SomaticCampaignCandidate,
         WitnessCapsule205B,
+        evaluate_ky_expression,
+        verify_rox_involution,
+        evaluate_plasma_risk,
         D1_ALLOWED_OPERATORS,
         D1_FORBIDDEN_OPERATORS,
         EvalResult,
@@ -40,6 +43,9 @@ except ImportError:
         KYGrammarEngine,
         SomaticCampaignCandidate,
         WitnessCapsule205B,
+        evaluate_ky_expression,
+        verify_rox_involution,
+        evaluate_plasma_risk,
         D1_ALLOWED_OPERATORS,
         D1_FORBIDDEN_OPERATORS,
         EvalResult,
@@ -304,6 +310,25 @@ class TestKYEngineV15Master(unittest.TestCase):
         self.assertEqual(res_farv["omega_verdict"], "KILL")
         self.assertEqual(res_farv["rtl_verdict_code"], 0xFF)
         self.assertEqual(res_farv["a5_gate_voltage"], 0.00)
+
+    def test_05_v15_master_canonical_test_vectors_and_rtl_verify_o1(self):
+        """Verifiserer alle 6 kanoniske KY v1.5-MASTER testvektorer med ↻, 𝒪, ◊, ∥, ▶, ✕ og rtl_verify_o1()."""
+        test_vectors = [
+            ("↻(○ → ∅ → □) ▶", "OPEN", 5000),
+            ("↻(○ ⇒ ∅ → □ → ◊ → 𝒪 ↦ ●)#! ▶", "OPEN", 5000),
+            ("↻(□ ~ □↺) ∥", "HOLD", 2500),
+            ("(○ → ●) ≠ ✕", "KILL", 0),
+            ("(∅ → □) ∉K ✕", "KILL", 0),
+            ("↻(□ ↦ ●) ▶", "KILL", 0),
+        ]
+        for expr_str, expected_gate, expected_mv in test_vectors:
+            res = evaluate_ky_expression(expr_str)
+            self.assertEqual(res.gate, expected_gate, f"Feil på {expr_str}")
+            self.assertEqual(res.voltage_mv, expected_mv)
+            if res.capsule_205b is not None:
+                rtl_ok, _, msg = res.capsule_205b.rtl_verify_o1()
+                self.assertTrue(rtl_ok, msg)
+                self.assertEqual(len(res.capsule_205b.raw_205b), 205)
 
 
 if __name__ == '__main__':
