@@ -4,6 +4,11 @@
 
 # `sololys/ky-rox-public-demonstrators` — L2 Consequence Gate Demonstrators (Morandi-Core)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24032490.svg)](https://doi.org/10.5281/zenodo.24032490)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0006--0431--6637-A6CE39?style=flat-square)](https://orcid.org/0009-0006-0431-6637)
+[![Granitum Physics](https://img.shields.io/badge/SALON-Granitum_Physics_(LinkedIn)-0A66C2?style=flat-square)](https://www.linkedin.com/groups/40622443/)
+
+
 $$\boxed{\text{CANDIDATE\_GENERATION} \neq \text{AUTHORIZATION} \neq \text{REALIZED\_CONSEQUENCE}}$$
 
 $$\Omega(x, e, \Delta_K) = \begin{cases} \text{OPEN} & \text{if } e \neq \varnothing \land \Delta_K(x) \le \tau_K \land \text{Zone}(x) = \text{CLEAR} \\ \text{HOLD} & \text{if } e = \varnothing \lor \text{Zone}(x) = \text{OCCUPIED} \\ \text{KILL} & \text{if } \Delta_K(x) > \tau_K \end{cases}$$

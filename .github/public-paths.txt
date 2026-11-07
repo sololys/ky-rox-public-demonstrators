@@ -4,6 +4,8 @@
 .github/workflows/morandi-core-gate.yml
 .github/workflows/public-surface-gate.yml
 .gitignore
+.zenodo.json
+CITATION.cff
 L1_LAW/DEMO_ATTEST_MAL.md
 L1_LAW/PUBLIC_BOUNDARY.md
 L1_LAW/SECURITY.md

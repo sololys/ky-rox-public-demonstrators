@@ -1,0 +1,38 @@
+{
+  "title": "Deterministic Consequence Gate & 205-Byte RTL Witness Verifier: Zero-Dependency Python & SystemVerilog Reference Suite (sololys/ky-rox-public-demonstrators v1.5.1)",
+  "version": "1.5.1",
+  "upload_type": "software",
+  "publication_date": "2026-11-07",
+  "creators": [
+    {
+      "name": "Torjusen, Marius Egerhei",
+      "orcid": "0009-0006-0431-6637",
+      "affiliation": "Granitum Physics // Sovereign Consequence Architecture, Norway"
+    }
+  ],
+  "access_right": "open",
+  "license": "MIT",
+  "keywords": [
+    "formal-verification",
+    "systemverilog",
+    "reed-solomon",
+    "control-barrier-functions",
+    "cyber-physical-systems",
+    "game-theory",
+    "nash-equilibrium",
+    "fail-closed",
+    "zero-dependency"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/sololys/ky-rox-public-demonstrators",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "10.5281/zenodo.18436983",
+      "relation": "isPartOf",
+      "scheme": "doi"
+    }
+  ]
+}
