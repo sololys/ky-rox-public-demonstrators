@@ -22,9 +22,29 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../E
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../ENGINES")))
 
 try:
-    from micro_engines.ky_parser import KYParser, KYEngine, EvalResult, Verdict
+    from micro_engines.ky_parser import (
+        KYParser,
+        KYEngine,
+        KYGrammarEngine,
+        SomaticCampaignCandidate,
+        WitnessCapsule205B,
+        D1_ALLOWED_OPERATORS,
+        D1_FORBIDDEN_OPERATORS,
+        EvalResult,
+        Verdict,
+    )
 except ImportError:
-    from ky_parser import KYParser, KYEngine, EvalResult, Verdict
+    from ky_parser import (
+        KYParser,
+        KYEngine,
+        KYGrammarEngine,
+        SomaticCampaignCandidate,
+        WitnessCapsule205B,
+        D1_ALLOWED_OPERATORS,
+        D1_FORBIDDEN_OPERATORS,
+        EvalResult,
+        Verdict,
+    )
 
 
 class TestKYRealizationGrammar(unittest.TestCase):
@@ -225,6 +245,65 @@ class TestKYEngineV15Master(unittest.TestCase):
         self.assertEqual(res_kill.gate, "KILL")
         self.assertEqual(res_kill.admissibility, "kill")
         self.assertTrue(res_kill.roundtrip_ok)
+        self.assertEqual(res_hold.a5_gate_voltage, 2.50)
+        self.assertEqual(res_kill.a5_gate_voltage, 0.00)
+
+    def test_04_spec416_205b_capsule_and_kreativ_core_v31_granitum(self):
+        """Verifiserer 205-byte vitnekapsel (119B + 86B), D1 bijeksjoner, Nash-resolvent (gamma=0) og kobordisme (d1*d2=0)."""
+        self.assertTrue({"ROX", "NOT", "GRAY"}.issubset(D1_ALLOWED_OPERATORS))
+        self.assertEqual(D1_ALLOWED_OPERATORS & D1_FORBIDDEN_OPERATORS, frozenset())
+
+        engine = KYGrammarEngine()
+        cand_scar = SomaticCampaignCandidate(
+            campaign_id="AE-2026-SCAR",
+            title="The Geometric Scar",
+            classification="BØFF",
+            u_raw=100.0,
+            c_k=25.0,
+            s_irr=10.0,
+            r_w=15.0,
+            has_material_warrant=True,
+            rox_payload=0xCAFEBABE,
+            rox_mask_in=0xA5A5A5A5,
+            rox_mask_out=0xA5A5A5A5,
+            plasma_noise_pi=0.12,
+            ky_expression="✓(○ → ∅ → □ → ◇ → ●)#! ▸",
+            gamma_nash=0.0,
+            cobordism_d1_d2=0.0,
+            delta_prov=0.0,
+            hangtag_id="KC-ARR-2026-025",
+        )
+        res_scar = engine.evaluate_kreativ_core_campaign(cand_scar)
+        self.assertEqual(res_scar["omega_verdict"], "OPEN")
+        self.assertEqual(res_scar["nash_resolvent"], 1.0)
+        self.assertEqual(res_scar["capsule_205b_len"], 205)
+        self.assertEqual(res_scar["rtl_verdict_code"], 0x01)
+        self.assertEqual(res_scar["a5_gate_voltage"], 5.00)
+
+        # Compliance Division sirkulær FARV-felle (d1*d2 != 0 -> 0xFF TRAP_TAMPER)
+        cand_farv = SomaticCampaignCandidate(
+            campaign_id="AE-2026-SHEEN-FARV",
+            title="The Flawless Sheen (Compliance Override)",
+            classification="BLØFF",
+            u_raw=100.0,
+            c_k=25.0,
+            s_irr=10.0,
+            r_w=15.0,
+            has_material_warrant=True,
+            rox_payload=0xCAFEBABE,
+            rox_mask_in=0xA5A5A5A5,
+            rox_mask_out=0xA5A5A5A5,
+            plasma_noise_pi=0.12,
+            ky_expression="✓(○ → ∅ → □ → ◇ → ●)#! ▸",
+            gamma_nash=0.0,
+            cobordism_d1_d2=2.0,
+            delta_prov=2.0,
+            hangtag_id="KC-ARR-2026-025",
+        )
+        res_farv = engine.evaluate_kreativ_core_campaign(cand_farv)
+        self.assertEqual(res_farv["omega_verdict"], "KILL")
+        self.assertEqual(res_farv["rtl_verdict_code"], 0xFF)
+        self.assertEqual(res_farv["a5_gate_voltage"], 0.00)
 
 
 if __name__ == '__main__':

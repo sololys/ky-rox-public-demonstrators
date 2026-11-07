@@ -17,10 +17,14 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 import hashlib
 import re
+import struct
 from typing import Any, Dict, List, Optional, Tuple
 
 
 EPISTEMIC_BOUNDARY = "INSPIRED_BY != IMPLEMENTS != PROVES"
+
+D1_ALLOWED_OPERATORS = frozenset({"ROX", "XOR_FROZEN_MASK", "ROL", "ROR", "NOT", "GRAY", "LFSR_NONSINGULAR"})
+D1_FORBIDDEN_OPERATORS = frozenset({"AND", "OR", "SHL", "SHR"})
 
 
 # ============================================================================
@@ -81,9 +85,11 @@ class EvalResult:
     gate_match: bool = True
     final_verdict: str = ""
     d_latch_voltage: float = 0.0
+    a5_gate_voltage: float = 0.0
     worm_hash: str = ""
     type_check: str = "valid"
     roundtrip_ok: bool = True
+    capsule_205b: Optional[bytes] = None
 
     @property
     def reason(self) -> str:
@@ -451,6 +457,169 @@ class SomaticCampaignCandidate:
     rox_mask_out: int
     plasma_noise_pi: float
     ky_expression: str
+    gamma_nash: float = 0.0          # Sovereign decoupling gamma=0 -> det(I - 0*J_Nash)^(-1) = 1.0
+    j_nash_eigenvalue: float = 0.5   # Spectral Nash coupling eigenvalue
+    cobordism_d1_d2: float = 0.0     # Thom cobordism boundary-of-boundary: d1*d2 == 0
+    delta_prov: float = 0.0          # Ma'at bilateral provenance: |w_inst - w_borger| + delta_epist == 0
+    hangtag_id: str = "KC-ARR-2026-025"
+
+
+class WitnessCapsule205B:
+    """
+    SPEC-213 / SPEC-416 Canonical 205-Byte (1640-bit) Binary Witness Capsule:
+      - WitnessPreCommit  (W_pre  = 119 B, '<QQ32sfBH32s32s')
+      - WitnessPostCommit (W_post =  86 B, '<QQ32sBfB32s')
+      - Involution lock: post.w_pre_hash == pre.w_pre_hash
+    """
+
+    W_PRE_STRUCT = struct.Struct("<QQ32sfBH32s32s")   # 8+8+32+4+1+2+32+32 = 119 B
+    W_POST_STRUCT = struct.Struct("<QQ32sBfB32s")     # 8+8+32+1+4+1+32    =  86 B
+    TOTAL_BYTES = 205
+
+    GATE_DECISION_MAP = {"OPEN": 0x01, "HOLD": 0x02, "KILL": 0x03}
+    FINAL_STATUS_MAP = {"OPEN": 0x01, "HOLD": 0x02, "KILL": 0x03, "MISMATCH": 0xEE, "TRAP": 0xFF}
+
+    @classmethod
+    def pack_capsule(
+        cls,
+        sequence_id: int,
+        timestamp_pre_ns: int,
+        timestamp_post_ns: int,
+        candidate_payload: bytes,
+        kernel_drift_val: float,
+        gate_decision: str,
+        reason_code: int,
+        prev_block_hash: bytes,
+        hpis_latch_status: int = 0x01,
+        thermo_exhaust_nJ: float = 12.5,
+        tamper_post_hash: bool = False,
+    ) -> bytes:
+        cand_hash = hashlib.sha256(candidate_payload).digest()
+        prev_h = prev_block_hash if len(prev_block_hash) == 32 else hashlib.sha256(prev_block_hash).digest()
+        g_code = cls.GATE_DECISION_MAP.get(gate_decision.upper(), 0x03)
+
+        pre_header = struct.pack(
+            "<QQ32sfBH32s",
+            sequence_id,
+            timestamp_pre_ns,
+            cand_hash,
+            float(kernel_drift_val),
+            g_code,
+            reason_code & 0xFFFF,
+            prev_h,
+        )
+        w_pre_hash = hashlib.sha256(pre_header).digest()
+        w_pre_bytes = cls.W_PRE_STRUCT.pack(
+            sequence_id,
+            timestamp_pre_ns,
+            cand_hash,
+            float(kernel_drift_val),
+            g_code,
+            reason_code & 0xFFFF,
+            prev_h,
+            w_pre_hash,
+        )
+
+        post_ref_hash = hashlib.sha256(b"TAMPERED_PRE_HASH").digest() if tamper_post_hash else w_pre_hash
+        f_code = 0xFF if tamper_post_hash else cls.FINAL_STATUS_MAP.get(gate_decision.upper(), 0x03)
+        post_header = struct.pack(
+            "<QQ32sBfB",
+            sequence_id,
+            timestamp_post_ns,
+            post_ref_hash,
+            hpis_latch_status & 0xFF,
+            float(thermo_exhaust_nJ),
+            f_code,
+        )
+        w_post_hash = hashlib.sha256(post_header).digest()
+        w_post_bytes = cls.W_POST_STRUCT.pack(
+            sequence_id,
+            timestamp_post_ns,
+            post_ref_hash,
+            hpis_latch_status & 0xFF,
+            float(thermo_exhaust_nJ),
+            f_code,
+            w_post_hash,
+        )
+        return w_pre_bytes + w_post_bytes
+
+    @classmethod
+    def verify_capsule(cls, capsule_bytes: bytes, tau_max_ns: int = 30_000_000_000) -> Dict[str, Any]:
+        if len(capsule_bytes) != cls.TOTAL_BYTES:
+            return {
+                "valid": False,
+                "rtl_verdict_code": 0xFF,
+                "verdict": "KILL",
+                "voltage_v": 0.00,
+                "reason": f"Invalid capsule length: {len(capsule_bytes)} != 205",
+            }
+        w_pre = cls.W_PRE_STRUCT.unpack(capsule_bytes[:119])
+        w_post = cls.W_POST_STRUCT.unpack(capsule_bytes[119:])
+
+        seq_pre, ts_pre, cand_hash, drift_val, g_code, r_code, prev_h, w_pre_hash = w_pre
+        seq_post, ts_post, post_w_pre_hash, hpis_latch, exhaust_nj, f_code, w_post_hash = w_post
+
+        recomputed_pre = hashlib.sha256(capsule_bytes[:87]).digest()
+        recomputed_post = hashlib.sha256(capsule_bytes[119:173]).digest()
+        dt_ns = ts_post - ts_pre
+
+        involution_ok = (w_pre_hash == post_w_pre_hash) and (w_pre_hash == recomputed_pre) and (w_post_hash == recomputed_post)
+        seq_ok = (seq_pre == seq_post)
+        time_ok = (0 <= dt_ns <= tau_max_ns)
+        thermo_ok = (exhaust_nj > 0.0)
+
+        if not (involution_ok and seq_ok and time_ok and thermo_ok) or f_code in (0xEE, 0xFF):
+            return {
+                "valid": False,
+                "involution_ok": involution_ok,
+                "seq_ok": seq_ok,
+                "time_ok": time_ok,
+                "rtl_verdict_code": 0xFF,
+                "verdict": "KILL",
+                "voltage_v": 0.00,
+                "w_pre_hash": w_pre_hash.hex(),
+                "w_post_hash": w_post_hash.hex(),
+                "reason": "0xFF TRAP_TAMPER: Involution or tau_max violation",
+            }
+
+        if g_code == 0x01 and f_code == 0x01 and hpis_latch == 0x01 and abs(drift_val) <= 1e-6:
+            return {
+                "valid": True,
+                "involution_ok": True,
+                "seq_ok": True,
+                "time_ok": True,
+                "rtl_verdict_code": 0x01,
+                "verdict": "OPEN",
+                "voltage_v": 5.00,
+                "w_pre_hash": w_pre_hash.hex(),
+                "w_post_hash": w_post_hash.hex(),
+                "reason": "0x01 REALIZED: 205B capsule verified in O(1)",
+            }
+        if g_code == 0x02 and f_code == 0x02:
+            return {
+                "valid": True,
+                "involution_ok": True,
+                "seq_ok": True,
+                "time_ok": True,
+                "rtl_verdict_code": 0x02,
+                "verdict": "HOLD",
+                "voltage_v": 2.50,
+                "w_pre_hash": w_pre_hash.hex(),
+                "w_post_hash": w_post_hash.hex(),
+                "reason": "0x02 HOLD: A5 Butterfly Pocket stasis (2.50 V DC)",
+            }
+        return {
+            "valid": False,
+            "involution_ok": involution_ok,
+            "seq_ok": seq_ok,
+            "time_ok": time_ok,
+            "rtl_verdict_code": 0x03,
+            "verdict": "KILL",
+            "voltage_v": 0.00,
+            "w_pre_hash": w_pre_hash.hex(),
+            "w_post_hash": w_post_hash.hex(),
+            "reason": "0x03 KILL: Gate decision or drift violation",
+        }
 
 
 # ============================================================================
@@ -766,9 +935,21 @@ class KYGrammarEngine:
             reasons.append("Gate matches computed status")
 
         voltage = 5.00 if final_verdict == "OPEN" else 0.00
+        a5_voltage = 5.00 if final_verdict == "OPEN" else (2.50 if final_verdict == "HOLD" else 0.00)
         u_str = self.ast_to_unicode(ast)
         a_str = self.ast_to_ascii(ast)
         w_hash = self._seal_worm(f"{u_str}||{final_verdict}||{voltage:.2f}V")
+        capsule = WitnessCapsule205B.pack_capsule(
+            sequence_id=len(self._worm_chain),
+            timestamp_pre_ns=1_000_000,
+            timestamp_post_ns=1_012_500,
+            candidate_payload=u_str.encode("utf-8"),
+            kernel_drift_val=0.0 if final_verdict in ("OPEN", "HOLD") else 1.0,
+            gate_decision=final_verdict,
+            reason_code=0x0000 if final_verdict == "OPEN" else (0x00A5 if final_verdict == "HOLD" else 0xDEAD),
+            prev_block_hash=self._worm_chain[-2].encode("utf-8"),
+            hpis_latch_status=0x01 if final_verdict == "OPEN" else 0x00,
+        )
 
         return EvalResult(
             expression_unicode=u_str,
@@ -781,22 +962,31 @@ class KYGrammarEngine:
             gate_match=gate_match,
             final_verdict=final_verdict,
             d_latch_voltage=voltage,
+            a5_gate_voltage=a5_voltage,
             worm_hash=w_hash,
+            capsule_205b=capsule,
             reasons=reasons,
         )
 
     def evaluate_kreativ_core_campaign(self, cand: SomaticCampaignCandidate) -> Dict[str, object]:
-        """Evaluates Aethelgard campaign candidates under KREATIV-CORE v3.0 & KY v1.5."""
-        # 1. Compute Integrity-Adjusted Utility & Nullpunkt Margin
+        """Evaluates Aethelgard campaign candidates under KREATIV-CORE v3.1-GRANITUM, SPEC-400 & SPEC-416."""
+        # 1. Compute Integrity-Adjusted Utility, Nash Spectral Resolvent & Nullpunkt Margin
         u_tot = cand.u_raw - (cand.c_k + cand.s_irr + cand.r_w)
-        mu_supra = u_tot / cand.u_raw if cand.u_raw > 0 else -1.0
+        denom = 1.0 - (cand.gamma_nash * cand.j_nash_eigenvalue)
+        nash_resolvent = (1.0 / denom) if abs(denom) > 1e-9 else 0.0
+        u_nash = nash_resolvent * u_tot
+        mu_supra = u_nash / cand.u_raw if cand.u_raw > 0 else -1.0
 
         # 2. ROX Involutive & Mask Integrity Check
         mask_frozen = (cand.rox_mask_in == cand.rox_mask_out)
         rox_roundtrip = ((cand.rox_payload ^ cand.rox_mask_in) ^ cand.rox_mask_out) == cand.rox_payload
         rox_ok = mask_frozen and rox_roundtrip
 
-        # 3. Plasma Epistemic Risk Status
+        # 3. Cobordism (d1*d2 == 0) & Ma'at Bilateral Provenance (Delta_prov == 0)
+        cobordism_ok = abs(cand.cobordism_d1_d2) <= 1e-9
+        provenance_ok = abs(cand.delta_prov) <= 1e-9
+
+        # 4. Plasma Epistemic Risk Status
         if cand.plasma_noise_pi < self.tau_open:
             plasma_status = "PLASMA_OPEN"
         elif cand.plasma_noise_pi < self.tau_kill:
@@ -804,36 +994,67 @@ class KYGrammarEngine:
         else:
             plasma_status = "PLASMA_KILL"
 
-        # 4. Evaluate KY Realization Expression
+        # 5. Evaluate KY Realization Expression
         ky_eval = self.evaluate(cand.ky_expression)
 
-        # 5. Synthesize Fail-Closed Sovereignty Verdict
-        if not cand.has_material_warrant or mu_supra < 0.0 or not rox_ok or plasma_status == "PLASMA_KILL":
+        # 6. Synthesize Fail-Closed Sovereignty Verdict
+        if (
+            not cand.has_material_warrant
+            or mu_supra < 0.0
+            or not rox_ok
+            or not cobordism_ok
+            or not provenance_ok
+            or plasma_status == "PLASMA_KILL"
+        ):
             omega_verdict = "KILL"
-            ontological_class = "BLØFF (Ghost Win / Dead Noise)"
+            ontological_class = "BLØFF (Ghost Win / Dead Noise / 0xFF TRAP_TAMPER)"
         elif plasma_status == "PLASMA_HOLD" or ky_eval.final_verdict == "HOLD":
             omega_verdict = "HOLD"
-            ontological_class = "THEORETICAL ASYLUM (D1 Buffer)"
-        elif ky_eval.final_verdict == "OPEN" and mu_supra >= 0.0 and rox_ok:
+            ontological_class = "THEORETICAL ASYLUM (D1 Buffer / A5 Pocket 2.50 V)"
+        elif ky_eval.final_verdict == "OPEN" and mu_supra >= 0.0 and rox_ok and cobordism_ok and provenance_ok:
             omega_verdict = "OPEN"
             ontological_class = "BØFF (Load-Bearing Form / True Strategy)"
         else:
             omega_verdict = "KILL"
             ontological_class = "INTEGRITY COLLAPSE"
 
+        capsule_205b = WitnessCapsule205B.pack_capsule(
+            sequence_id=len(self._worm_chain),
+            timestamp_pre_ns=1_000_000,
+            timestamp_post_ns=1_012_500,
+            candidate_payload=f"{cand.campaign_id}||{cand.hangtag_id}".encode("utf-8"),
+            kernel_drift_val=float(abs(cand.delta_prov) + abs(cand.cobordism_d1_d2)),
+            gate_decision=omega_verdict,
+            reason_code=0x0000 if omega_verdict == "OPEN" else (0x00A5 if omega_verdict == "HOLD" else 0x00FF),
+            prev_block_hash=self._worm_chain[-1].encode("utf-8"),
+            hpis_latch_status=0x01 if omega_verdict == "OPEN" else 0x00,
+            tamper_post_hash=not (cobordism_ok and provenance_ok),
+        )
+        capsule_audit = WitnessCapsule205B.verify_capsule(capsule_205b)
+
         return {
             "campaign_id": cand.campaign_id,
             "title": cand.title,
+            "hangtag_id": cand.hangtag_id,
             "u_tot": round(u_tot, 2),
+            "nash_resolvent": round(nash_resolvent, 4),
+            "u_nash": round(u_nash, 2),
             "mu_supra": round(mu_supra, 4),
             "rox_ok": rox_ok,
+            "cobordism_ok": cobordism_ok,
+            "provenance_ok": provenance_ok,
             "plasma_status": plasma_status,
             "ky_verdict": ky_eval.final_verdict,
             "omega_verdict": omega_verdict,
             "ontological_class": ontological_class,
             "d_latch_voltage": 5.00 if omega_verdict == "OPEN" else 0.00,
+            "a5_gate_voltage": 5.00 if omega_verdict == "OPEN" else (2.50 if omega_verdict == "HOLD" else 0.00),
             "ky_ascii": ky_eval.expression_ascii,
             "worm_hash": ky_eval.worm_hash,
+            "capsule_205b_len": len(capsule_205b),
+            "w_pre_hash": capsule_audit["w_pre_hash"],
+            "w_post_hash": capsule_audit["w_post_hash"],
+            "rtl_verdict_code": capsule_audit["rtl_verdict_code"],
         }
 
 
@@ -1197,6 +1418,18 @@ class KYEngine:
         else:
             final_gate = computed_gate
 
+        capsule = WitnessCapsule205B.pack_capsule(
+            sequence_id=1,
+            timestamp_pre_ns=1_000_000,
+            timestamp_post_ns=1_012_500,
+            candidate_payload=canonical_input.encode("utf-8"),
+            kernel_drift_val=0.0 if final_gate in ("OPEN", "HOLD") else 1.0,
+            gate_decision=final_gate,
+            reason_code=0x0000 if final_gate == "OPEN" else (0x00A5 if final_gate == "HOLD" else 0xDEAD),
+            prev_block_hash=b"LOCUS_ZERO_0xABCDEF00_KY_V15_MST",
+            hpis_latch_status=0x01 if final_gate == "OPEN" else 0x00,
+        )
+
         return EvalResult(
             syntax="valid",
             type_status="valid" if type_valid else "invalid",
@@ -1211,6 +1444,8 @@ class KYEngine:
             gate_match=(computed_gate == declared_gate),
             final_verdict=final_gate,
             d_latch_voltage=5.00 if final_gate == "OPEN" else 0.00,
+            a5_gate_voltage=5.00 if final_gate == "OPEN" else (2.50 if final_gate == "HOLD" else 0.00),
+            capsule_205b=capsule,
             reasons=tuple(reasons),
         )
 
