@@ -35,7 +35,9 @@ L2_GATE/test_adversarial_capsule_gate_harness.py
 L2_GATE/test_registry_b_dlatch_telemetry_protocol.py
 L2_GATE/test_spec414_415_416_gothenburg_corridor_gate.py
 L3_WITNESS/audit_log.jsonl
+LICENSE
 Makefile
+NOTICE
 README.md
 artifacts/microtests/euclidean_phase_cone_isac_v0_1/CHECKSUMS.sha256
 artifacts/microtests/euclidean_phase_cone_isac_v0_1/EXPECTED_OUTPUT.txt
