@@ -2,46 +2,49 @@
   <img src="punkt/media/witness-fiber-consequence-cut.svg" alt="Witness Fiber Consequence Cut" width="100%" />
 </p>
 
-# `sololys/ky-rox-public-demonstrators` — L2 Consequence Gate Demonstrators (Morandi-Core)
+# KY-ROX Public Demonstrators — Runnable Gates & FPGA Prototypes
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24032490.svg)](https://doi.org/10.5281/zenodo.24032490)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0006--0431--6637-A6CE39?style=flat-square)](https://orcid.org/0009-0006-0431-6637)
 [![Granitum Physics](https://img.shields.io/badge/SALON-Granitum_Physics_(LinkedIn)-0A66C2?style=flat-square)](https://www.linkedin.com/groups/40622443/)
 
+> **Coordinate (`4 · Gate`):** [`(0,0) sololys`](https://github.com/sololys) — [`1 · Word`](https://github.com/sololys/skrivevaerelset) → [`2 · Draft`](https://github.com/sololys/epistemic-architectures-notes) → [`3 · Rule`](https://github.com/sololys/epistemic-architectures) → **`[4 · Gate]`** → [`5 · Seal`](https://github.com/sololys/monolitt)
 
-$$\boxed{\text{CANDIDATE\_GENERATION} \neq \text{AUTHORIZATION} \neq \text{REALIZED\_CONSEQUENCE}}$$
+Runnable Python microtests (Python 3.10+ Standard Library only) and synthesizable SystemVerilog (`IEEE 1800-2012`) gate prototypes implementing the specifications in [`epistemic-architectures`](https://github.com/sololys/epistemic-architectures).
 
-$$\Omega(x, e, \Delta_K) = \begin{cases} \text{OPEN} & \text{if } e \neq \varnothing \land \Delta_K(x) \le \tau_K \land \text{Zone}(x) = \text{CLEAR} \\ \text{HOLD} & \text{if } e = \varnothing \lor \text{Zone}(x) = \text{OCCUPIED} \\ \text{KILL} & \text{if } \Delta_K(x) > \tau_K \end{cases}$$
+$$\Omega(x, e, \Delta_K) = \begin{cases} \mathrm{OPEN} & \text{if } e \neq \varnothing \land \Delta_K(x) \le \tau_K \land \mathrm{Zone}(x) = \mathrm{CLEAR} \\ \mathrm{HOLD} & \text{if } e = \varnothing \lor \mathrm{Zone}(x) = \mathrm{OCCUPIED} \\ \mathrm{KILL} & \text{if } \Delta_K(x) > \tau_K \end{cases}$$
 
-**Compiled Ingress (EN):** Bounded, deterministic `L1` software microtests (`48/48 PASS` across 7 Monoliths + `SPEC-412..415` Domain Gates, plus `10/10 PASS` in `L1_LAW`) demonstrating fail-closed consequence gating (`OPEN / HOLD / KILL / TRAP`). Zero external dependencies ($\Sigma_{\text{ext}} = \emptyset$, Python 3.10+ Standard Library only). Zero physical or operational authority (`0.00 V DC`).
-**Kompilert Ingress (NO):** Avgrensede, deterministiske `L1`-mikrotester (`48/48 PASS` over 7 Monolitter + `SPEC-412..415` domenesluser, samt `10/10 PASS` i `L1_LAW`) for fail-closed konsekvensporter (`OPEN / HOLD / KILL / TRAP`). Null eksterne avhengigheter ($\Sigma_{\text{ext}} = \emptyset$, kun Python 3.10+ standardbibliotek). Null fysisk eller operasjonell autoritet (`0,00 V DC`).
-
-* **Author:** Marius Egerhei Torjusen ([ORCID: `0009-0006-0431-6637`](https://orcid.org/0009-0006-0431-6637) · [Zenodo DOIs: `10.5281/zenodo.18436983`](https://doi.org/10.5281/zenodo.18436983) · [`10.5281/zenodo.22229111`](https://doi.org/10.5281/zenodo.22229111))
+* **Author:** Marius Egerhei Torjusen · Risør, Norway ([ORCID `0009-0006-0431-6637`](https://orcid.org/0009-0006-0431-6637) · Zenodo DOIs [`10.5281/zenodo.18436983`](https://doi.org/10.5281/zenodo.18436983) · [`10.5281/zenodo.22229111`](https://doi.org/10.5281/zenodo.22229111))
+* **Epistemic Boundary (`INSPIRED_BY != IMPLEMENTS != PROVES`):** Bounded `L1` software microtests (`48/48 PASS` across 8 suites + `10/10 PASS` in `L1_LAW`) and `L1`/`L1.5` RTL testbenches (`0.00 V DC`, zero physical or operational authority).
 
 ---
 
-## I. Execution Contract (`Makefile` & `run_demo.py`)
+## I. Run & Verify (`Makefile` & `run_demo.py`)
 
 ```bash
 # Default invocation fails closed by design (HOLD = 0.00 V DC):
 make
 # -> [HOLD] 0.00 V DC. System is at rest. (exit code 1)
 
-# Full deterministic verification of L1_LAW (10/10), L2_GATE, Public Surface, and 8 Suites (48/48 PASS):
+# Full deterministic verification of L1_LAW (10/10), L2_GATE, and 8 Suites (48/48 PASS):
 make verify
 # Or directly:
 python3 run_demo.py
+
+# Optional SystemVerilog RTL simulation (requires iverilog):
+make sim_205b   # 205-byte capsule frame decoder & 12.5 us guillotine testbench
+make sim_400c   # 400-cycle temporal bifurcation gate testbench
 ```
 
 ---
 
-## II. Subtractive Room Topology
+## II. Directory Map
 
-| Room | Role | Primary Artifacts |
+| Directory | Role | Primary Artifacts |
 | :--- | :--- | :--- |
-| **[`L1_LAW/`](L1_LAW/)** | Pure mathematical definitions (`KY_ROX_SCOPE_GATE_V0_2`) & public boundary contracts. Zero I/O. | [`invariants_pure.py`](L1_LAW/invariants_pure.py) (`10/10 PASS`) · [`PUBLIC_BOUNDARY.md`](L1_LAW/PUBLIC_BOUNDARY.md) · [`STATUS_PUBLIC.md`](L1_LAW/STATUS_PUBLIC.md) · [`SECURITY.md`](L1_LAW/SECURITY.md) |
-| **[`L2_GATE/`](L2_GATE/)** | Boundary projection & consequence gate evaluator ($\Omega \circ \Pi_K$). | [`evaluate_boundaries.py`](L2_GATE/evaluate_boundaries.py) |
-| **[`L3_WITNESS/`](L3_WITNESS/)** | Append-only SHA-256 cryptographic receipts ($W^2$). | [`audit_log.jsonl`](L3_WITNESS/audit_log.jsonl) |
+| **[`L1_LAW/`](L1_LAW/)** | Pure mathematical definitions (`KY_ROX_SCOPE_GATE_V0_2`), KY codec & public boundary contracts. Zero I/O. | [`invariants_pure.py`](L1_LAW/invariants_pure.py) (`10/10 PASS`) · [`ky_parser.py`](L1_LAW/ky_parser.py) · [`PUBLIC_BOUNDARY.md`](L1_LAW/PUBLIC_BOUNDARY.md) · [`STATUS_PUBLIC.md`](L1_LAW/STATUS_PUBLIC.md) · [`SECURITY.md`](L1_LAW/SECURITY.md) |
+| **[`L2_GATE/`](L2_GATE/)** | Consequence gate evaluators ($\Omega \circ \Pi_K$) & SystemVerilog RTL gate modules. | [`evaluate_boundaries.py`](L2_GATE/evaluate_boundaries.py) · [`fpga_capsule_frame_205b_decoder.sv`](L2_GATE/fpga_capsule_frame_205b_decoder.sv) · [`kpod_fpga_guillotine_12u5.sv`](L2_GATE/kpod_fpga_guillotine_12u5.sv) · [`temporal_bifurcation_400c.sv`](L2_GATE/temporal_bifurcation_400c.sv) · [`gothenburg_corridor_rosetta_top.sv`](L2_GATE/gothenburg_corridor_rosetta_top.sv) |
+| **[`L3_WITNESS/`](L3_WITNESS/)** | Append-only SHA-256 hash-chain log ($W^2$). | [`audit_log.jsonl`](L3_WITNESS/audit_log.jsonl) *(software hash chain, not physical WORM)* |
 | **[`artifacts/microtests/`](artifacts/microtests/) & [`monoliths/`](monoliths/)** | The Seven Monoliths & `SPEC-412..415` Domain Gates (`8 x 6/6 = 48/48 PASS` + `CHECKSUMS.sha256`). | See Section III below |
 | **[`punkt/contracts/`](punkt/contracts/)** | Claim-level & decision vocabulary contracts (`INSPIRED_BY != IMPLEMENTS != PROVES`). | [`claim-levels.md`](punkt/contracts/claim-levels.md) · [`candidate-not-consequence.md`](punkt/contracts/candidate-not-consequence.md) · [`decision-vocabulary.md`](punkt/contracts/decision-vocabulary.md) |
 
@@ -83,23 +86,6 @@ OPERATIONAL_AUTHORITY        = NONE
 
 <p align="center"><code>GENERATION != AUTHORIZATION != WITNESSED CONSEQUENCE · 0.00 V DC</code></p>
 
-<!-- SOVEREIGN_CONSTELLATION_MAP_START -->
 ---
-
-## 🧭 Sovereign Architecture Constellation (Cross-Repository Matrix)
-
-This repository is part of a 6-layer deterministic engineering constellation (`L1` software & hardware verification, `INSPIRED_BY != IMPLEMENTS != PROVES`):
-
-| Layer | Repository | Core Engineering Scope | Deterministic Verification |
-| :--- | :--- | :--- | :--- |
-| **L1 — Law & Domain Gates** | [`sololys/ky-rox-public-demonstrators`](https://github.com/sololys/ky-rox-public-demonstrators) | `invariants_pure.py`, The 7 Public Monoliths & Domain Gates `SPEC-412` (Forlik), `SPEC-413` (Orbital), `SPEC-414` (Radar), `SPEC-415` (Benthic K-POD) | $\Pi_A \circ F \circ \Phi$, Preimage $\Psi(y)$ & $\mathcal{G}_{\mathrm{shadow}}$ (`48/48 PASS` + `10/10 L1_LAW`) |
-| **L2 — RTL & Subspace** | [`sololys/epistemic-architectures-notes`](https://github.com/sololys/epistemic-architectures-notes) | COS45 Hankel-SVD Grassmann subspace projection, clocked SystemVerilog RTL (`0.00 V` quench) & Davisson–Fine–Newton Gate | `26/26 PASS` (`PUBLIC_IP_GATE=PASS`) |
-| **L3 — Phase & Horizon** | [`sololys/FASE_SPEIL_v0_1`](https://github.com/sololys/FASE_SPEIL_v0_1) | Davisson Bragg coherence ($54\text{ V}/50^\circ$), Fine–Wilf ghost-word detector ($L^* = p+q-\gcd(p,q) = 12$) & Staggered-PRF SDR filter | `26/26 PASS` |
-| **L4 — Local-First Net & RTL Interlock** | [`sololys/Infranett`](https://github.com/sololys/Infranett) | Infranett v0.4 ($S_0 = \text{GATE::HOLD}$, Time-of-Flight $d \le 20\text{ m}$, `Noise_KK` 0-RTT, `fsync < RAM < ACK`) & Hardware/RTL Interlock (`03_ENGINES/ky_iks_dk_lab_v0_4/`, `dk_dff.sv`, `tb_dk_dff_etor_gate.sv`) | Fysisk klokke- og port-gating (`0.00 V DC` hvile, `26/26 PASS`) |
-| **L5 — Continuous Path** | [`sololys/OrgelKraft`](https://github.com/sololys/OrgelKraft) | Continuous mechanical & acoustic work integration ($\Delta E_k = \int F\,dx$) & multi-period harmonic horizon | `26/26 PASS` |
-| **L6 — Cognitive Shield** | [`sololys/TonderSheeld`](https://github.com/sololys/TonderSheeld) | Synthetic psychosomatics, Schaerbeek ceiling ($2^{12}$), Landauer erasure floor ($E_{\min} = k_B T \ln 2$) & Diurnal Gearbox ($S_1$–$S_5$) | `26/26 PASS` |
-<!-- SOVEREIGN_CONSTELLATION_MAP_END -->
-
----
-`STATE ANCHOR: 0xABCDEF00` · `RELEASE: v1.5.0-MASTER` · `GATE: [SSOT_LOCKED // HOLD 0.00V_DC]` · `ORCID: 0009-0006-0431-6637`
+**Metadata & Terms:** [ORCID `0009-0006-0431-6637`](https://orcid.org/0009-0006-0431-6637) · [`LICENSE`](LICENSE) · [`NOTICE`](NOTICE)
 
