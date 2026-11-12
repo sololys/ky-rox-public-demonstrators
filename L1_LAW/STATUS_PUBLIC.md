@@ -35,4 +35,4 @@ Nothing in this repository authorizes physical action, production deployment,
 safety-critical use, or transfer of authority beyond the bounded software surface.
 
 The canonical public claim contract is
-[punkt/contracts/claim-levels.md](punkt/contracts/claim-levels.md).
+[../punkt/contracts/claim-levels.md](../punkt/contracts/claim-levels.md).

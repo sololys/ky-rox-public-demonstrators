@@ -3,13 +3,18 @@
   "claim_status": "HOLD",
   "collision_enabled": false,
   "final_bridge_state": "HOLD_BLUEPRINT",
-  "final_witness_hash": "da778f654f5d9c9837b2bbdc5db3a07e76d2f202de66df396be14dcdbd25375e",
+  "final_witness_hash": "21f13631a8f96cc15cf0c2dc1ce3d946958b5a88a1a191dde6141b7b9280d66d",
+  "hold_jurisdiction": "P_INT",
   "invariants_verified": {
     "append_only_reset": true,
+    "dual_clock_deadline_forfeits_and_purges_pending": true,
     "explicit_evidence_required": true,
+    "gate_capture_asymmetry_triggers_kill": true,
     "hold_never_opens_by_time": true,
     "kill_disables_collision_and_cancels_pending": true,
-    "occupied_zone_defers_realization": true
+    "occupied_zone_defers_realization": true,
+    "silent_hold_rejected": true,
+    "witness_chain_intact": true
   },
   "is_kill_latched": false,
   "measurement_status": "OPEN",
@@ -17,5 +22,5 @@
   "operational_authority": "NONE",
   "physical_authority": "NONE",
   "status": "HOLD",
-  "witness_count": 5
+  "witness_count": 8
 }

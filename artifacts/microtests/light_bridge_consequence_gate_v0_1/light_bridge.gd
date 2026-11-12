@@ -24,9 +24,11 @@ enum BridgeState {
 signal state_transitioned(old_state: BridgeState, new_state: BridgeState, witness_record: Dictionary)
 signal occupancy_changed(is_occupied: bool, occupying_count: int)
 signal open_deferred_due_to_occupancy(evidence_id: String, reason: String)
+signal hold_jurisdiction_escalated(new_jurisdiction: String, elapsed_tau: float, witness_record: Dictionary)
 
 @export var bridge_id: String = "LB-001"
 @export var bridge_size: Vector2 = Vector2(340, 24)
+@export var hold_tau_max: float = 14.0
 
 # Current runtime state
 var current_state: BridgeState = BridgeState.HOLD_BLUEPRINT
@@ -34,6 +36,10 @@ var modeled_voltage: float = 0.00
 var modeled_voltage_verified: float = 0.00
 var is_kill_latched: bool = false
 var pulse_timer: float = 0.0
+var hold_elapsed_time: float = 0.0
+var hold_jurisdiction: String = "P_INT"
+var active_hold_delta_k: String = ""
+var is_hold_deadline_forfeited: bool = false
 var active_evidence_id: String = ""
 var last_event_id: String = ""
 var last_event_hash: String = "0000000000000000000000000000000000000000000000000000000000000000"
@@ -107,6 +113,8 @@ func _ensure_child_nodes() -> void:
 
 func _process(delta: float) -> void:
 	pulse_timer += delta
+	if current_state == BridgeState.HOLD_BLUEPRINT and delta > 0.0:
+		advance_hold_clock(delta)
 	_update_visuals()
 
 
@@ -154,8 +162,8 @@ func _on_area_body_exited(body: Node2D) -> void:
 		emit_signal("occupancy_changed", still_occupied, overlapping_player_bodies.size())
 		print("[LIGHT_BRIDGE %s] Player exited bridge zone: %s (Remaining: %d)" % [bridge_id, body.name, overlapping_player_bodies.size()])
 
-		# If an OPEN authorization was held waiting for zone clearance, finalize now
-		if not still_occupied and pending_evidence_for_clearance.size() > 0:
+		# If an OPEN authorization was held waiting for zone clearance under active P_INT jurisdiction, finalize now
+		if not still_occupied and pending_evidence_for_clearance.size() > 0 and hold_jurisdiction == "P_INT" and not is_hold_deadline_forfeited:
 			print("[LIGHT_BRIDGE %s] Zone cleared. Finalizing pending OPEN authorization..." % bridge_id)
 			var ev_data = pending_evidence_for_clearance.duplicate(true)
 			pending_evidence_for_clearance.clear()
@@ -166,12 +174,35 @@ func _on_area_body_exited(body: Node2D) -> void:
 # STATE MACHINE GATING LOGIC
 # ------------------------------------------------------------------------------
 
-func set_to_hold(proposal_id: String, rationale: String = "") -> Dictionary:
+func set_to_hold(proposal_id: String, rationale: String = "") -> Variant:
+	var clean_rationale = rationale.strip_edges()
+	if clean_rationale == "":
+		modeled_voltage = 0.00
+		modeled_voltage_verified = 0.00
+		hold_jurisdiction = "P_EXT"
+		if collision_shape:
+			collision_shape.set_deferred("disabled", true)
+		_append_witness_record("REJECTED_SILENT_HOLD", {
+			"proposal_id": proposal_id,
+			"delta_k": "EMPTY",
+			"hold_jurisdiction": hold_jurisdiction,
+			"modeled_voltage": "0.00 V — MODELED SOFTWARE STATE",
+			"modeled_voltage_verified": "0.00 V — VERIFIED DE-ENERGIZED READBACK",
+			"collision_enabled": false,
+			"state": "HOLD_BLUEPRINT"
+		})
+		printerr("[LIGHT_BRIDGE %s] ERROR: Silent HOLD forbidden! Empty rationale (delta_k = EMPTY) rejected." % bridge_id)
+		return false
+
 	var old_state = current_state
 	current_state = BridgeState.HOLD_BLUEPRINT
 	modeled_voltage = 0.00
 	modeled_voltage_verified = 0.00
 	pulse_timer = 0.0
+	hold_elapsed_time = 0.0
+	hold_jurisdiction = "P_INT"
+	active_hold_delta_k = clean_rationale
+	is_hold_deadline_forfeited = false
 
 	# Strict Fail-Closed Invariant: Collision is disabled in HOLD
 	if collision_shape:
@@ -179,7 +210,9 @@ func set_to_hold(proposal_id: String, rationale: String = "") -> Dictionary:
 
 	var record = _append_witness_record("SET_TO_HOLD", {
 		"proposal_id": proposal_id,
-		"rationale": rationale,
+		"rationale": clean_rationale,
+		"delta_k": clean_rationale,
+		"hold_jurisdiction": hold_jurisdiction,
 		"modeled_voltage": "0.00 V — MODELED SOFTWARE STATE",
 		"modeled_voltage_verified": "0.00 V — VERIFIED DE-ENERGIZED READBACK",
 		"collision_enabled": false,
@@ -189,6 +222,90 @@ func set_to_hold(proposal_id: String, rationale: String = "") -> Dictionary:
 	emit_signal("state_transitioned", old_state, current_state, record)
 	print("[LIGHT_BRIDGE %s] State -> HOLD_BLUEPRINT (Collision Disabled, 0.00 V Modeled, Event: %s)" % [bridge_id, record["event_id"]])
 	return record
+
+
+func advance_hold_clock(delta_tau: float) -> Dictionary:
+	if delta_tau < 0.0:
+		printerr("[LIGHT_BRIDGE %s] ERROR: Non-monotone clock rollback rejected (%.3f)." % [bridge_id, delta_tau])
+		return {
+			"status": "REJECTED_CLOCK_ROLLBACK",
+			"success": false,
+			"hold_jurisdiction": hold_jurisdiction,
+			"open_authorized": false
+		}
+
+	if current_state != BridgeState.HOLD_BLUEPRINT:
+		return {
+			"status": "NOT_IN_HOLD",
+			"success": false,
+			"hold_jurisdiction": hold_jurisdiction,
+			"open_authorized": (current_state == BridgeState.OPEN_REALIZED)
+		}
+
+	# First Clock Law: Time passing never mutates HOLD -> OPEN
+	hold_elapsed_time += delta_tau
+	modeled_voltage = 0.00
+	modeled_voltage_verified = 0.00
+
+	# Second Clock Law: Stalling past hold_tau_max forfeits P_INT -> P_EXT and purges pending warrant
+	if hold_tau_max > 0.0 and hold_elapsed_time > hold_tau_max and hold_jurisdiction == "P_INT" and not is_hold_deadline_forfeited:
+		var had_pending_clearance = pending_evidence_for_clearance.size() > 0
+		pending_evidence_for_clearance.clear()
+		hold_jurisdiction = "P_EXT"
+		is_hold_deadline_forfeited = true
+		var forfeit_record = _append_witness_record("HOLD_DEADLINE_FORFEITED", {
+			"delta_k": active_hold_delta_k,
+			"elapsed_tau": hold_elapsed_time,
+			"hold_tau_max": hold_tau_max,
+			"previous_jurisdiction": "P_INT",
+			"hold_jurisdiction": "P_EXT",
+			"pending_clearance_stalled": had_pending_clearance,
+			"pending_evidence_purged": had_pending_clearance,
+			"open_authorized": false,
+			"modeled_voltage": "0.00 V — MODELED SOFTWARE STATE",
+			"modeled_voltage_verified": "0.00 V — VERIFIED DE-ENERGIZED READBACK",
+			"collision_enabled": false,
+			"state": "HOLD_BLUEPRINT"
+		})
+		emit_signal("hold_jurisdiction_escalated", hold_jurisdiction, hold_elapsed_time, forfeit_record)
+		print("[LIGHT_BRIDGE %s] HOLD_DEADLINE_FORFEITED: Elapsed %.3f > %.3f. Jurisdiction P_INT -> P_EXT (0.00 V HOLD preserved)." % [bridge_id, hold_elapsed_time, hold_tau_max])
+		return {
+			"status": "HOLD_DEADLINE_FORFEITED",
+			"success": true,
+			"hold_jurisdiction": hold_jurisdiction,
+			"elapsed_tau": hold_elapsed_time,
+			"open_authorized": false,
+			"witness_record": forfeit_record
+		}
+
+	return {
+		"status": "HOLD_ACTIVE",
+		"success": true,
+		"hold_jurisdiction": hold_jurisdiction,
+		"elapsed_tau": hold_elapsed_time,
+		"open_authorized": false
+	}
+
+
+func audit_gate_neutrality(omega_a: String, omega_b: String) -> Dictionary:
+	var rule_a = omega_a.strip_edges().to_upper()
+	var rule_b = omega_b.strip_edges().to_upper()
+	if rule_a == "" or rule_b == "" or rule_a != rule_b:
+		var kill_rec = trigger_kill("KILL_GATE_CAPTURE")
+		return {
+			"neutral": false,
+			"status": "KILL_GATE_CAPTURE",
+			"omega_a": rule_a,
+			"omega_b": rule_b,
+			"witness_record": kill_rec
+		}
+
+	return {
+		"neutral": true,
+		"status": "VALID_NEUTRAL_GATE",
+		"omega_a": rule_a,
+		"omega_b": rule_b
+	}
 
 
 func attempt_open(evidence_payload: Dictionary) -> Dictionary:
@@ -220,6 +337,10 @@ func attempt_open(evidence_payload: Dictionary) -> Dictionary:
 	# Invariant 4: Occupancy Clearance Gating (SAFETY PATH > DATA PATH)
 	if is_occupied():
 		pending_evidence_for_clearance = evidence_payload
+		active_hold_delta_k = "ZONE_OCCUPIED_BY_PLAYER"
+		hold_elapsed_time = 0.0
+		hold_jurisdiction = "P_INT"
+		is_hold_deadline_forfeited = false
 		emit_signal("open_deferred_due_to_occupancy", evidence_id, "ZONE_OCCUPIED_BY_PLAYER")
 		print("[LIGHT_BRIDGE %s] GATING: Player in bridge zone! State remains HOLD until clearance." % bridge_id)
 		return {
@@ -238,6 +359,8 @@ func _apply_open_state(evidence_payload: Dictionary) -> Dictionary:
 	modeled_voltage = 5.00
 	modeled_voltage_verified = 5.00
 	pulse_timer = 0.0
+	hold_elapsed_time = 0.0
+	is_hold_deadline_forfeited = false
 	active_evidence_id = evidence_payload.get("evidence_id", "EV_DEFAULT")
 
 	# Safe Deferred Collision Activation
@@ -270,6 +393,7 @@ func trigger_kill(reason: String = "EMERGENCY_FAIL_CLOSED") -> Dictionary:
 	modeled_voltage = 0.00
 	modeled_voltage_verified = 0.00
 	pulse_timer = 0.0
+	hold_elapsed_time = 0.0
 	pending_evidence_for_clearance.clear()  # Cancels pending authorization
 
 	# Immediate Fail-Closed Guillotine: Collision disabled
@@ -292,23 +416,55 @@ func trigger_kill(reason: String = "EMERGENCY_FAIL_CLOSED") -> Dictionary:
 
 func reset_bridge(reason: String = "USER_CANVAS_RESET") -> Dictionary:
 	# RESET appends a record without erasing the append-only ledger history
+	var clean_reason = reason.strip_edges()
+	if clean_reason == "":
+		clean_reason = "USER_CANVAS_RESET"
 	is_kill_latched = false
 	pending_evidence_for_clearance.clear()
 	var record = _append_witness_record("RESET_CANVAS", {
-		"reason": reason,
+		"reason": clean_reason,
 		"modeled_voltage": "0.00 V — MODELED SOFTWARE STATE",
 		"modeled_voltage_verified": "0.00 V — VERIFIED DE-ENERGIZED READBACK",
 		"is_kill_latched": false,
 		"state": "HOLD_BLUEPRINT"
 	})
 
-	set_to_hold("RESET_PROPOSAL_" + str(Time.get_ticks_msec()), reason)
+	set_to_hold("RESET_PROPOSAL_" + str(Time.get_ticks_msec()), clean_reason)
 	return record
 
 
 # ------------------------------------------------------------------------------
 # DETERMINISTIC WITNESS LOGGING
 # ------------------------------------------------------------------------------
+func verify_witness_chain() -> bool:
+	var expected_prev = "0000000000000000000000000000000000000000000000000000000000000000"
+	for idx in range(witness_history.size()):
+		var entry = witness_history[idx]
+		if entry.get("sequence_number", -1) != idx:
+			return false
+		if entry.get("previous_hash", "") != expected_prev:
+			return false
+		var check_record = {
+			"event_id": entry["event_id"],
+			"sequence_number": entry["sequence_number"],
+			"previous_hash": entry["previous_hash"],
+			"bridge_id": entry["bridge_id"],
+			"action_type": entry["action_type"],
+			"timestamp": entry["timestamp"],
+			"details": entry["details"],
+			"system_disclaimer": entry["system_disclaimer"]
+		}
+		var raw_str = JSON.stringify(check_record)
+		var ctx = HashingContext.new()
+		ctx.start(HashingContext.HASH_SHA256)
+		ctx.update(raw_str.to_utf8_buffer())
+		var recomputed_hash = ctx.finish().hex_encode()
+		if recomputed_hash != entry.get("event_hash", ""):
+			return false
+		expected_prev = recomputed_hash
+	return expected_prev == last_event_hash
+
+
 func _append_witness_record(action_type: String, details: Dictionary) -> Dictionary:
 	var seq_num = witness_history.size()
 	var event_id = "EVT_" + str(seq_num + 1).pad_zeros(5)
