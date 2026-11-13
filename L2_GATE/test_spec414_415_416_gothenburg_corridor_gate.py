@@ -202,9 +202,7 @@ class TestGothenburgCorridorSpec414To416(unittest.TestCase):
         if shutil.which("iverilog") is None or shutil.which("vvp") is None:
             self.skipTest("iverilog/vvp ikke installert")
 
-        rtl_dir = "/home/sololyset/01_HARDWARE_RTL"
-        if not os.path.exists(os.path.join(rtl_dir, "spec415_kpod_cdc_gate.sv")):
-            rtl_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../L2_GATE"))
+        rtl_dir = os.path.dirname(os.path.abspath(__file__))
 
         sv_415 = os.path.join(rtl_dir, "spec415_kpod_cdc_gate.sv")
         sv_416 = os.path.join(rtl_dir, "spec416_infranett_witness_gate.sv")
@@ -378,9 +376,7 @@ endmodule
         if shutil.which("iverilog") is None or shutil.which("vvp") is None:
             self.skipTest("iverilog/vvp ikke installert")
 
-        rtl_dir = "/home/sololyset/01_HARDWARE_RTL"
-        if not os.path.exists(os.path.join(rtl_dir, "gothenburg_corridor_rosetta_top.sv")):
-            rtl_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../L2_GATE"))
+        rtl_dir = os.path.dirname(os.path.abspath(__file__))
 
         sv_213 = os.path.join(rtl_dir, "fpga_capsule_frame_205b_decoder.sv")
         sv_415 = os.path.join(rtl_dir, "spec415_kpod_cdc_gate.sv")

@@ -730,17 +730,7 @@ def _bytes_to_sv_hex_le(raw_bytes: bytes) -> str:
 def _resolve_rtl_decoder_path(explicit_path: Optional[str] = None) -> str:
     if explicit_path and os.path.isfile(explicit_path):
         return explicit_path
-    here = os.path.dirname(os.path.abspath(__file__))
-    candidates = [
-        os.path.join(here, "fpga_capsule_frame_205b_decoder.sv"),
-        os.path.abspath(os.path.join(here, "../../../01_HARDWARE_RTL/fpga_capsule_frame_205b_decoder.sv")),
-        os.path.abspath(os.path.join(here, "../01_HARDWARE_RTL/fpga_capsule_frame_205b_decoder.sv")),
-        "/home/sololyset/01_HARDWARE_RTL/fpga_capsule_frame_205b_decoder.sv",
-    ]
-    for c in candidates:
-        if os.path.isfile(c):
-            return c
-    return candidates[-1]
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "fpga_capsule_frame_205b_decoder.sv")
 
 
 def run_l1_5_iverilog_cosimulation(
