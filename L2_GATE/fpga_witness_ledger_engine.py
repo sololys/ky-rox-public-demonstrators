@@ -1,5 +1,5 @@
 """
-SPEC-213: FPGA WITNESS LEDGER (WORM) L1 REFERENCE ENGINE
+SPEC-213: FPGA WITNESS LEDGER (APPEND-ONLY SHA-256 WAL, NOT PHYSICAL WORM) L1 REFERENCE ENGINE
 Architecture: Phronesis Engine // Sovereign Witness Track
 Target: FPGA Append-Only Memory C-Struct Specification
 Author: Marius E. Torjusen (ORCID: 0009-0006-0431-6637), Independent Researcher

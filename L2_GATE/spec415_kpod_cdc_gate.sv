@@ -32,8 +32,8 @@ module spec415_kpod_cdc_gate #(
     // -------------------------------------------------------------------------
     // 1. 5x Asynchronous 2-Stage Flip-Flop CDC Synchronizers
     // -------------------------------------------------------------------------
-    logic [4:0] cdc_meta_q;
-    logic [4:0] cdc_sync_q;
+    (* keep = "true", ASYNC_REG = "TRUE" *) logic [4:0] cdc_meta_q;
+    (* keep = "true", ASYNC_REG = "TRUE" *) logic [4:0] cdc_sync_q;
 
     always_ff @(posedge clk_sys_i or negedge rst_n_i) begin
         if (!rst_n_i) begin

@@ -582,7 +582,7 @@ class AdversarialCapsuleGateMachine:
             reason_code = REASON_CODE_NOMINAL
             hpis_latch = HPIS_LATCH_ENGAGED
             final_status = FINAL_STATUS_REALIZED
-            exhaust_nJ = 0.0
+            exhaust_nJ = calculate_landauer_exhaust_nJ(max(abs(kernel_drift), 0.01))
         elif status == "INTERLOCK_MISMATCH" and gate_verdict == "OPEN":
             # Vektor B: d_k = OPEN (0x01), men a_k = 0 -> HPIS_LATCH_ISOLATED (0x00) og positiv eksos
             fpga_decision = GATE_DECISION_OPEN
@@ -801,34 +801,37 @@ module tb_cosim_205b;
     initial begin
         w_pre_frame_le  = 952'd0;
         w_post_frame_le = 688'd0;
-        #15 rst_n = 1;
+        @(negedge clk);
+        rst_n = 1;
 
         // Vektor A: Nominell SIMULATED_EFFECT
         w_pre_frame_le  = {vec_a_pre_sv};
         w_post_frame_le = {vec_a_post_sv};
         frame_valid = 1;
-        #10 frame_valid = 0;
-        #10;
+        @(posedge clk); #1;
+        frame_valid = 0;
         $display("VEC_A: seq=%0d gate=0x%02h latch=0x%02h link_ok=%0d v5v=%0d code=0x%02h",
                  pre_seq_id, pre_gate_decision, post_hpis_latch_byte, capsule_linkage_ok, v_gate_out_5v, rtl_verdict_code);
         if (v_gate_out_5v !== 1'b1 || rtl_verdict_code !== 8'h01 || capsule_linkage_ok !== 1'b1) $finish(1);
 
         // Vektor B: INTERLOCK_MISMATCH (d_k=OPEN, a_k=0)
+        @(negedge clk);
         w_pre_frame_le  = {vec_b_pre_sv};
         w_post_frame_le = {vec_b_post_sv};
         frame_valid = 1;
-        #10 frame_valid = 0;
-        #10;
+        @(posedge clk); #1;
+        frame_valid = 0;
         $display("VEC_B: seq=%0d gate=0x%02h latch=0x%02h link_ok=%0d v5v=%0d code=0x%02h",
                  pre_seq_id, pre_gate_decision, post_hpis_latch_byte, capsule_linkage_ok, v_gate_out_5v, rtl_verdict_code);
         if (v_gate_out_5v !== 1'b0 || rtl_verdict_code !== 8'hEE) $finish(1);
 
         // Vektor C: Tuklet CapsuleLinkage (W_POST.w_pre_hash != W_PRE.w_pre_hash)
+        @(negedge clk);
         w_pre_frame_le  = {vec_c_pre_sv};
         w_post_frame_le = {vec_c_post_sv};
         frame_valid = 1;
-        #10 frame_valid = 0;
-        #10;
+        @(posedge clk); #1;
+        frame_valid = 0;
         $display("VEC_C: seq=%0d gate=0x%02h latch=0x%02h link_ok=%0d v5v=%0d code=0x%02h",
                  pre_seq_id, pre_gate_decision, post_hpis_latch_byte, capsule_linkage_ok, v_gate_out_5v, rtl_verdict_code);
         if (v_gate_out_5v !== 1'b0 || rtl_verdict_code !== 8'hFF || capsule_linkage_ok !== 1'b0) $finish(1);

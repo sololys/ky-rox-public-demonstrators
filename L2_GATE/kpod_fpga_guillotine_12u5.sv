@@ -5,8 +5,11 @@
 // LAW: ○ -> ◇ -> □ -> ⟲ (XOR) -> ⬡ (Pi_K) -> # (Witness) -> ! (OR-Fuse) -> ◉ -> ▶ (5000 mV) / ✕ (0 mV)
 // ============================================================================
 
+`timescale 1ns / 1ps
+
 module kpod_fpga_guillotine_12u5 #(
-    parameter logic [63:0] RFM_XOR_MASK = 64'hA55A_F00F_CC33_AA55
+    parameter logic [63:0] RFM_XOR_MASK    = 64'hA55A_F00F_CC33_AA55,
+    parameter bit          PIPELINE_STAGE1 = 1'b0
 ) (
     input  logic        clk_80khz,              // 12.5 us Frisch-pulse clock
     input  logic        rst_n,                  // Active-low hardware reset
@@ -34,7 +37,7 @@ module kpod_fpga_guillotine_12u5 #(
     input  logic [15:0] s_struvite_milli,       // [1800, 3200] (1.8 .. 3.2)
     input  logic [31:0] delta_q_mg,             // |m_in - m_out| <= 1 mg (1e-6 kg)
     input  logic [15:0] spectral_rho_milli,     // < 1000 (rho(DF_Sigma) < 1.0)
-    input  logic        witness_anchor_valid,   // SHA-256 WORM chain continuity (#)
+    input  logic        witness_anchor_valid,   // Append-only SHA-256 WAL chain continuity (#, not physical WORM)
 
     // Outputs (D2 Actuation & Audit)
     output logic [3:0]  ky_glyph_stage_out = 4'd0,     // 0=○, 1=◇, 2=□, 3=⟲, 4=⬡, 5=#, 6=!, 7=◉, 8=▶, 15=✕
@@ -43,8 +46,10 @@ module kpod_fpga_guillotine_12u5 #(
     output logic        interlock_relay_en_out = 1'b0, // 1 = CLOSED (OPEN), 0 = Guillotined (KILL)
     output logic [15:0] voltage_mv_out = 16'd0         // 5000 mV (5.00 V DC) or 0 mV (0.00 V DC)
 );
+`ifndef SYNTHESIS
     timeunit 1ns;
     timeprecision 1ps;
+`endif
 
     // 1. D1 Reversible RFM/IKS XOR Involution Check: (m ^ k) ^ k == m
     logic [63:0] xor_encoded;
@@ -53,37 +58,77 @@ module kpod_fpga_guillotine_12u5 #(
 
     assign xor_encoded   = payload_in ^ RFM_XOR_MASK;
     assign xor_roundtrip = xor_encoded ^ RFM_XOR_MASK;
-    assign rfm_xor_ok    = (payload_in != 64'd0) && (xor_roundtrip == payload_in);
+    assign rfm_xor_ok    = ((payload_in[31:0] != 32'd0) || (payload_in[63:32] != 32'd0)) &&
+                           (xor_roundtrip == payload_in);
 
     // 2. Viability Projection Pi_K (Admissible Set A)
+    logic mycelin_pwr_temp_ok;
+    logic mycelin_gas_mass_ok;
     logic mycelin_ok;
     logic kpod_ok;
     logic ppod_ok;
+    logic trinity_pre_ok;
     logic trinity_ok;
     logic viability_ok;
 
-    assign mycelin_ok = (p_myc_mw >= 32'd49500) && (p_myc_mw <= 32'd50500) &&
-                        (t_myc_mc >= 32'd24000) && (t_myc_mc <= 32'd28000) &&
-                        (o2_permille > 16'd180) &&
-                        (rq_milli >= 16'd850)   && (rq_milli <= 16'd1050) &&
-                        (m_n_in_mg >= 32'd10000);
+    assign mycelin_pwr_temp_ok = (p_myc_mw[31:16] == 16'd0) &&
+                                 (p_myc_mw[15:0] >= 16'd49500) && (p_myc_mw[15:0] <= 16'd50500) &&
+                                 (t_myc_mc[31:16] == 16'd0) &&
+                                 (t_myc_mc[15:0] >= 16'd24000) && (t_myc_mc[15:0] <= 16'd28000);
 
-    assign kpod_ok    = (heartbeat_byte == 8'hFF) &&
-                        (v_cell_mv >= 16'd993)    && (v_cell_mv <= 16'd1003) &&
-                        (eta_fe_permille >= 16'd891) && (eta_fe_permille <= 16'd893) &&
-                        (o2_intrusion_ppm == 16'd0);
+    assign mycelin_gas_mass_ok = (o2_permille > 16'd180) &&
+                                 (rq_milli >= 16'd850)   && (rq_milli <= 16'd1050) &&
+                                 ((m_n_in_mg[31:16] != 16'd0) || (m_n_in_mg[15:0] >= 16'd10000));
 
-    assign ppod_ok    = (s_struvite_milli >= 16'd1800) && (s_struvite_milli <= 16'd3200);
+    assign mycelin_ok     = mycelin_pwr_temp_ok && mycelin_gas_mass_ok;
 
-    assign trinity_ok = (delta_q_mg <= 32'd1) &&
-                        (spectral_rho_milli < 16'd1000) &&
-                        witness_anchor_valid;
+    assign kpod_ok        = (heartbeat_byte == 8'hFF) &&
+                            (v_cell_mv >= 16'd993)    && (v_cell_mv <= 16'd1003) &&
+                            (eta_fe_permille >= 16'd891) && (eta_fe_permille <= 16'd893) &&
+                            (o2_intrusion_ppm == 16'd0);
 
-    assign viability_ok = mycelin_ok && kpod_ok && ppod_ok && trinity_ok;
+    assign ppod_ok        = (s_struvite_milli >= 16'd1800) && (s_struvite_milli <= 16'd3200);
 
-    // 3. Monotone OR-Fuse Invariant: F_n subseteq F_{n+1} <=> (F_n & F_{n+1}) == F_n
-    logic monotone_fuse_ok;
-    assign monotone_fuse_ok = ((monotone_fuse_reg_out & proposed_fuse_mask) == monotone_fuse_reg_out);
+    assign trinity_pre_ok = (delta_q_mg <= 32'd1) &&
+                            (spectral_rho_milli < 16'd1000);
+
+    assign trinity_ok     = trinity_pre_ok && witness_anchor_valid;
+
+    assign viability_ok   = mycelin_ok && kpod_ok && ppod_ok && trinity_ok;
+
+    // 3. Monotone OR-Fuse Invariant: F_n subseteq F_{n+1} <=> (F_n & ~F_{n+1}) == 0
+    logic [63:0] fuse_violation;
+    logic        monotone_fuse_ok;
+    assign fuse_violation   = monotone_fuse_reg_out & (~proposed_fuse_mask);
+    assign monotone_fuse_ok = (fuse_violation[31:0] == 32'd0) && (fuse_violation[63:32] == 32'd0);
+
+    // Optional Stage-1 Pipeline Registers for High-fmax Serialized Top (SPEC-419)
+    logic s1_myc_a_q;
+    logic s1_myc_b_q;
+    logic s1_kpod_q;
+    logic s1_ppod_trin_q;
+    logic s1_fuse_ok_q;
+
+    always_ff @(posedge clk_80khz or negedge rst_n) begin
+        if (!rst_n) begin
+            s1_myc_a_q     <= 1'b0;
+            s1_myc_b_q     <= 1'b0;
+            s1_kpod_q      <= 1'b0;
+            s1_ppod_trin_q <= 1'b0;
+            s1_fuse_ok_q   <= 1'b0;
+        end else begin
+            s1_myc_a_q     <= mycelin_pwr_temp_ok;
+            s1_myc_b_q     <= mycelin_gas_mass_ok;
+            s1_kpod_q      <= kpod_ok;
+            s1_ppod_trin_q <= ppod_ok && trinity_pre_ok;
+            s1_fuse_ok_q   <= monotone_fuse_ok;
+        end
+    end
+
+    wire eff_viability_ok     = PIPELINE_STAGE1
+                              ? (s1_myc_a_q && s1_myc_b_q && s1_kpod_q && s1_ppod_trin_q && witness_anchor_valid)
+                              : viability_ok;
+    wire eff_monotone_fuse_ok = PIPELINE_STAGE1 ? s1_fuse_ok_q : monotone_fuse_ok;
 
     // 4. Sequential 80 kHz Guillotine State Machine
     always_ff @(posedge clk_80khz or negedge rst_n) begin
@@ -98,7 +143,7 @@ module kpod_fpga_guillotine_12u5 #(
             trap_latched_out       <= 1'b0;
             interlock_relay_en_out <= 1'b0;
             voltage_mv_out         <= 16'd0;
-        end else if (trap_latched_out || direct_raw_jump_attempt || !rfm_xor_ok || !viability_ok || !monotone_fuse_ok) begin
+        end else if (trap_latched_out || direct_raw_jump_attempt || !rfm_xor_ok || !eff_viability_ok || !eff_monotone_fuse_ok) begin
             // Fail-Closed Guillotine Cut (✕ / 0.00 V DC) within single 12.5 us cycle
             ky_glyph_stage_out     <= 4'd15; // ✕ (KILL)
             trap_latched_out       <= 1'b1;

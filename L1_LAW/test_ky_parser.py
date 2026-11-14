@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-UNIT TESTS: KY PARSER & D3 WORM LEDGER (KY v1.5-MASTER)
+UNIT TESTS: KY PARSER & D3 APPEND-ONLY SHA-256 WAL LEDGER (KY v1.5-MASTER, NOT PHYSICAL WORM)
 ========================================================
 Status: L1 Kjørende Verifikasjonstest // LOCUS ZERO
 Verifiserer:
-  - Gyldig OPEN forsegler D3 WORM hash-kjeden
+  - Gyldig OPEN forsegler D3 append-only SHA-256 WAL-kjeden (ikke fysisk WORM)
   - Gyldig HOLD (Wandering dynamics) bevarer tilstand uten å forurense ledger
   - Gyldig KILL avviser inadmissible kandidater
   - Anti-Engine beskyttelse (• i Prepare) trigger KILL
@@ -89,7 +89,7 @@ class TestKYRealizationGrammar(unittest.TestCase):
         self.assertIn("Type-brudd: Ulovlig overgang i topologien.", result.reasons)
 
     def test_irreversible_without_audit(self):
-        # Forsøk på irreversibel commit uten kryptografisk bevis (WORM/Hash)
+        # Forsøk på irreversibel commit uten kryptografisk bevis (append-only SHA-256 WAL, ikke fysisk WORM)
         parser = KYParser("(□→◇→●)►")
         result = parser.parse()
         self.assertEqual(result.gate, Verdict.KILL)
@@ -116,7 +116,7 @@ class TestKYParser(unittest.TestCase):
         self.parser = KYParser()
 
     def test_01_valid_open_with_seal_grows_ledger(self):
-        """Tester at gyldig OPEN forsegler D3 WORM hash-kjeden irreversibelt."""
+        """Tester at gyldig OPEN forsegler D3 append-only SHA-256 WAL-kjeden (ikke fysisk WORM)."""
         init_hash = self.parser.ledger_hash
         res = self.parser.parse("✓(○→∅→□⇒♢)►→•#")
         self.assertEqual(res.gate, "OPEN")

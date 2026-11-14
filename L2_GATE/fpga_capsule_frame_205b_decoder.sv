@@ -68,8 +68,24 @@ module fpga_capsule_frame_205b_decoder (
     wire [31:0] post_exhaust_f32 = w_post_frame_le[49*8 +: 32];
     assign post_final_status    = w_post_frame_le[53*8 +: 8];
 
-    // Positive IEEE-754 float32 check: sign bit [31] == 0 and magnitude [30:0] != 0
-    wire exhaust_positive = (post_exhaust_f32[31] == 1'b0) && (post_exhaust_f32[30:0] != 31'd0);
+    // Strictly positive normalized finite IEEE-754 float32 check:
+    // sign bit [31] == 0 and biased exponent [30:23] in [1..254] (rejects +-0.0, subnormals, Inf, NaN)
+    wire [7:0] post_exhaust_exp = post_exhaust_f32[30:23];
+    wire exhaust_positive = (post_exhaust_f32[31] == 1'b0) &&
+                            (post_exhaust_exp != 8'h00) &&
+                            (post_exhaust_exp != 8'hFF);
+
+    // Parallel 32-bit slice comparisons (prevents 128-stage serial carry chain in synthesis)
+    wire seq_mismatch  = (pre_seq_id[31:0]  != post_seq_id[31:0]) ||
+                         (pre_seq_id[63:32] != post_seq_id[63:32]);
+    wire hash_mismatch = (pre_w_pre_hash[31:0]    != post_w_pre_hash[31:0])    ||
+                         (pre_w_pre_hash[63:32]   != post_w_pre_hash[63:32])   ||
+                         (pre_w_pre_hash[95:64]   != post_w_pre_hash[95:64])   ||
+                         (pre_w_pre_hash[127:96]  != post_w_pre_hash[127:96])  ||
+                         (pre_w_pre_hash[159:128] != post_w_pre_hash[159:128]) ||
+                         (pre_w_pre_hash[191:160] != post_w_pre_hash[191:160]) ||
+                         (pre_w_pre_hash[223:192] != post_w_pre_hash[223:192]) ||
+                         (pre_w_pre_hash[255:224] != post_w_pre_hash[255:224]);
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -78,7 +94,7 @@ module fpga_capsule_frame_205b_decoder (
             rtl_verdict_code   <= 8'h03;
         end else if (frame_valid) begin
             // 1. Check cryptographic linkage between W_PRE (119B) and W_POST (86B)
-            if (pre_seq_id != post_seq_id || pre_w_pre_hash != post_w_pre_hash) begin
+            if (seq_mismatch || hash_mismatch) begin
                 capsule_linkage_ok <= 1'b0;
                 v_gate_out_5v      <= 1'b0; // 0.00 V DC
                 rtl_verdict_code   <= 8'hFF; // TRAP_TAMPER (CapsuleLinkage mismatch)
@@ -89,17 +105,23 @@ module fpga_capsule_frame_205b_decoder (
                 v_gate_out_5v      <= 1'b0; // 0.00 V DC
                 rtl_verdict_code   <= 8'hEE; // INTERLOCK_MISMATCH
             end
-            // 3. Nominal OPEN + HPIS Engaged + Final Status REALIZED (0x01)
+            // 3. Landauer Zero-Exhaust / IEEE-754 Subnormal-NaN Fraud -> 0.00 V DC TRAP_TAMPER
+            else if (!exhaust_positive) begin
+                capsule_linkage_ok <= 1'b0;
+                v_gate_out_5v      <= 1'b0; // 0.00 V DC
+                rtl_verdict_code   <= 8'hFF; // TRAP_TAMPER (Unpaid Landauer Exhaust)
+            end
+            // 4. Nominal OPEN + HPIS Engaged + Final Status REALIZED (0x01) + Valid Landauer Exhaust
             else if (pre_gate_decision == 8'h01 && post_hpis_latch_byte == 8'h01 && post_final_status == 8'h01) begin
                 capsule_linkage_ok <= 1'b1;
                 v_gate_out_5v      <= 1'b1; // 5.00 V DC (SIMULATED_EFFECT in L1.5)
                 rtl_verdict_code   <= 8'h01; // SIMULATED_EFFECT
             end
-            // 4. KILL / HOLD path: must keep v_gate_out_5v = 0 and have positive Landauer exhaust
+            // 5. KILL / HOLD path: keep v_gate_out_5v = 0 with positive Landauer exhaust
             else begin
-                capsule_linkage_ok <= exhaust_positive;
+                capsule_linkage_ok <= 1'b1;
                 v_gate_out_5v      <= 1'b0; // 0.00 V DC
-                rtl_verdict_code   <= exhaust_positive ? 8'h03 : 8'hFF;
+                rtl_verdict_code   <= 8'h03;
             end
         end
     end

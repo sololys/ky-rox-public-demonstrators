@@ -86,6 +86,9 @@ module spec416_infranett_witness_gate #(
             gate_state_o      <= STATE_HOLD;
             breaker_actuate_o <= 1'b0; // Clamped at 0.00 V DC
         end else if (frame_valid_i) begin
+            if (!kill_latched_q) begin
+                hw_seq_q <= w_pre_seq_c;
+            end
             // Permanent KILL trap on TOCTOU mutation, Kirchhoff violation, fiber cut, or RoCoF collapse
             if (kill_latched_q ||
                 (w_pre_magic != EXPECTED_MAGIC) ||
@@ -102,13 +105,11 @@ module spec416_infranett_witness_gate #(
             end
             // HOLD on OTDR bend intrusion, PTP drift, VSG frequency excursion, BFT quorum, or Reg B
             else if (!bft_quorum_ok || otdr_hold || vsg_freq_hold || ptp_sync_hold || !registry_b_l3_ok) begin
-                hw_seq_q          <= w_pre_seq_c;
                 gate_state_o      <= STATE_HOLD;
                 breaker_actuate_o <= 1'b0; // Clamped at 0.00 V DC
             end
             // Witnessed L3 Consequence Admitted
             else begin
-                hw_seq_q          <= w_pre_seq_c;
                 gate_state_o      <= STATE_OPEN;
                 breaker_actuate_o <= 1'b1;
             end
