@@ -71,6 +71,30 @@ def frobenius_diff(A: Matrix, B: Matrix) -> float:
     return math.sqrt(acc)
 
 
+def matrix_rank(G: Matrix, tol: float = 1e-10) -> int:
+    """Computes numerical rank of matrix G via deterministic partial-pivot Gaussian elimination."""
+    rows = [list(r) for r in _validated(G, "G")]
+    n_rows = len(rows)
+    n_cols = len(rows[0])
+    rank = 0
+    col = 0
+    while rank < n_rows and col < n_cols:
+        pivot_row = max(range(rank, n_rows), key=lambda r: abs(rows[r][col]))
+        if abs(rows[pivot_row][col]) <= tol:
+            col += 1
+            continue
+        rows[rank], rows[pivot_row] = rows[pivot_row], rows[rank]
+        pivot_val = rows[rank][col]
+        for r in range(rank + 1, n_rows):
+            factor = rows[r][col] / pivot_val
+            if factor != 0.0:
+                for c in range(col, n_cols):
+                    rows[r][c] -= factor * rows[rank][c]
+        rank += 1
+        col += 1
+    return rank
+
+
 def is_positive_semidefinite_gram(G: Matrix, eps: float = 1e-12) -> bool:
     """
     Verifies symmetric Positive Semidefinite (PSD) structure for a Gram matrix G:
@@ -127,15 +151,16 @@ def normalized_raw_drift(reference: Matrix, observed: Matrix) -> float:
 class KernelDriftGate:
     """
     Deterministic consequence gate Omega_kernel(X(t), e, tau_G):
-      - OPEN if e != empty and Delta_G(t) <= tau_G
-      - HOLD if e == empty and Delta_G(t) <= tau_G
-      - KILL if Delta_G(t) > tau_G or shape mismatch or non-PSD Gram injection
+      - OPEN if e != empty, PSD(G(t)), Rank(G(t)) == r, and Delta_G(t) <= tau_G
+      - HOLD if e == empty, PSD(G(t)), Rank(G(t)) == r, and Delta_G(t) <= tau_G
+      - KILL if Delta_G(t) > tau_G or Rank(G(t)) != r or shape mismatch or non-PSD Gram injection
     """
 
     def __init__(self, X_ref: Matrix, tau_g: float = 1e-9) -> None:
         rows = _validated(X_ref, "X_ref")
         self._X0: List[List[float]] = [list(row) for row in rows]
         self._G0: List[List[float]] = compute_gram(self._X0)
+        self._rank0: int = matrix_rank(self._G0)
         self._tau_g: float = float(tau_g)
         self._ledger: List[WitnessRecord] = []
 
@@ -166,7 +191,7 @@ class KernelDriftGate:
         d_state = frobenius_diff(rows_t, self._X0)
         G_t = _validated(injected_gram, "injected_gram") if injected_gram is not None else compute_gram(rows_t)
 
-        if not is_positive_semidefinite_gram(G_t):
+        if not is_positive_semidefinite_gram(G_t) or matrix_rank(G_t) != self._rank0:
             rec = WitnessRecord(step, str(evidence_id or "").strip(), d_state, math.inf, "KILL")
             self._ledger.append(rec)
             return rec

@@ -66,13 +66,19 @@ class KernelDriftMicrotest(unittest.TestCase):
         self.assertEqual(rec.gate_status, "KILL")
 
     def test_05_positive_semidefinite_psd_guarantee_and_shape_guard(self) -> None:
-        """Invariant 5: Non-PSD synthetic Gram matrix (negative eigenvalue/minor) or shape mismatch -> KILL."""
+        """Invariant 5: Non-PSD Gram, Rank(G(t)) != r collapse, or shape mismatch -> KILL."""
         X0 = [[1.0, 0.0], [0.0, 1.0]]
         gate = KernelDriftGate(X0, tau_g=1.0)
         # Inject synthetic impossible Gram matrix with negative diagonal / violated Cauchy-Schwarz
         non_psd_gram = [[1.0, 2.0], [2.0, 1.0]]  # det = 1 - 4 = -3 < 0
         rec_psd = gate.evaluate(X0, evidence_id="EV-PSD-01", injected_gram=non_psd_gram)
         self.assertEqual(rec_psd.gate_status, "KILL")
+
+        # Rank collapse (rank 2 -> rank 1, even inside a wide tau_g) must also trigger KILL
+        gate_wide = KernelDriftGate(X0, tau_g=10.0)
+        rank_collapsed_gram = [[1.0, 1.0], [1.0, 1.0]]  # PSD, but rank = 1 != 2
+        rec_rank = gate_wide.evaluate(X0, evidence_id="EV-RANK-01", injected_gram=rank_collapsed_gram)
+        self.assertEqual(rec_rank.gate_status, "KILL")
 
         # Shape mismatch also triggers KILL
         bad_shape = evaluate([[1.0, 0.0]], [[1.0]])

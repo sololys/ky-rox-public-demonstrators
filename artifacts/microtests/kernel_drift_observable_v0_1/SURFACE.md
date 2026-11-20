@@ -30,8 +30,7 @@ For an ensemble `X(t)` of vectors in Euclidean space:
    `Delta_G > tau_G` (`KILL`).
 4. **Scaling & spectral breach:** Uniform scaling `X(t) = alpha X(0)` (`alpha != 1`)
    yields `Delta_G = |alpha^2 - 1| ||G(0)||_F > tau_G` (`KILL`).
-5. **Positive Semidefinite (PSD) guarantee:** Synthetic non-PSD Gram matrices or
-   shape mismatches trigger immediate `KILL`.
+5. **Positive Semidefinite (PSD) & Rank-Invariance guarantee:** Synthetic non-PSD Gram matrices, rank collapse (`Rank(G(t)) != r`), or shape mismatches trigger immediate `KILL`.
 6. **Witness enforcement & append-only ledger:** Missing `evidence_id` forces
    `HOLD`, and every evaluation appends an immutable `WitnessRecord`.
 
