@@ -18,16 +18,16 @@ import { ByteMapModal } from './components/ByteMapModal';
 import { SnapshotStudioModal } from './components/SnapshotStudioModal';
 
 interface SimSnapshot {
-  hwState: HardwareState;
-  currentFrame: Uint8Array;
+  state: HardwareState;
+  frame: Uint8Array;
 }
 
 export default function App() {
   const viewportRef = useRef<GraniteViewportHandle | null>(null);
 
   const [sim, setSim] = useState<SimSnapshot>(() => ({
-    hwState: createInitialHardwareState(),
-    currentFrame: build242ByteFrame({ token: 0x5c, tamperByte54: false }),
+    state: createInitialHardwareState(),
+    frame: build242ByteFrame({ token: 0x5c, tamperByte54: false }),
   }));
   const [exploded, setExploded] = useState<number>(0.55);
   const [cameraPreset, setCameraPreset] = useState<CameraPresetId>('overview');
@@ -40,10 +40,7 @@ export default function App() {
   const [studioOpen, setStudioOpen] = useState<boolean>(false);
 
   const handleRunScenario = useCallback((scenario: ScenarioId) => {
-    setSim((prev) => {
-      const result = runScenario(prev.hwState, scenario);
-      return { hwState: result.state, currentFrame: result.frame };
-    });
+    setSim((prev) => runScenario(prev.state, scenario));
   }, []);
 
   const handleSelectCamera = useCallback((preset: CameraPresetId) => {
@@ -85,7 +82,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleRunScenario]);
 
-  const { hwState, currentFrame } = sim;
+  const { state: hwState, frame: currentFrame } = sim;
 
   return (
     <main
@@ -111,7 +108,7 @@ export default function App() {
           Granite SG48 E-TOR Cascade
         </h1>
         <p className="mt-0.5 text-xs text-slate-400 font-mono tabular-nums">
-          iCE40 UP5K-SG48 · 12 MHz · 242B UART · {hwState.statusHeadline}
+          iCE40 UP5K-SG48 · 12 MHz · 242B UART · L1.5 SIM · {hwState.statusHeadline}
         </p>
         <p className="mt-1 text-xs text-slate-400/90 hidden sm:block">
           {hwState.statusDetail}
