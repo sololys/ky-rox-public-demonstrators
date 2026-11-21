@@ -47,6 +47,7 @@ make sim_400c   # 400-cycle temporal bifurcation gate testbench
 | **[`L3_WITNESS/`](L3_WITNESS/)** | Append-only SHA-256 hash-chain log ($W^2$). | [`audit_log.jsonl`](L3_WITNESS/audit_log.jsonl) *(software hash chain, not physical WORM)* |
 | **[`artifacts/microtests/`](artifacts/microtests/) & [`monoliths/`](monoliths/)** | The Seven Monoliths & `SPEC-412..415` Domain Gates (`8 x 6/6 = 48/48 PASS` + `CHECKSUMS.sha256`). | See Section III below |
 | **[`punkt/contracts/`](punkt/contracts/)** | Claim-level & decision vocabulary contracts (`INSPIRED_BY != IMPLEMENTS != PROVES`). | [`claim-levels.md`](punkt/contracts/claim-levels.md) · [`candidate-not-consequence.md`](punkt/contracts/candidate-not-consequence.md) · [`decision-vocabulary.md`](punkt/contracts/decision-vocabulary.md) |
+| **[`demos/granite-sg48-etor-cascade/`](demos/granite-sg48-etor-cascade/)** | Interactive 3D WebGL demonstrator for the `iCE40UP5K-SG48` E-TOR Cascade (`4 648/5 280 LC`, `26.22 MHz` STA, 242B UART map, `L1.5` model). | [`App.tsx`](demos/granite-sg48-etor-cascade/src/App.tsx) · [`etorProtocol.ts`](demos/granite-sg48-etor-cascade/src/sim/etorProtocol.ts) · [`GraniteViewport.tsx`](demos/granite-sg48-etor-cascade/src/scene/GraniteViewport.tsx) |
 
 ---
 
