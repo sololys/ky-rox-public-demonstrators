@@ -94,6 +94,10 @@ def canonical_json_bytes(obj: Any) -> bytes:
     ).encode("utf-8")
 
 
+def sha256_hex(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
 def canonical_matrix_fixed_point_bytes(candidate: Dict[str, Any]) -> bytes:
     """
     Konverterer numeriske metrikker i kandidaten til eksakte heltalls mikro-enheter (10^6)
@@ -116,10 +120,6 @@ def canonical_matrix_fixed_point_bytes(candidate: Dict[str, Any]) -> bytes:
         else:
             canonical_map[k] = normalize_for_jcs(v)
     return canonical_json_bytes(canonical_map)
-
-
-def sha256_hex(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -925,10 +925,22 @@ class CapsuleWireLoopbackNode:
             "impedance_state": "LOW_Z_CROWBAR",
         }
 
+    def authorize_l01_boot(self) -> Dict[str, Any]:
+        """
+        Eksplisitt Level 01 (menneskelig autoritet) kaldstart-kvittering:
+        Eneste lovlige vei for å løfte authority_retained tilbake til "TRUE" etter cold-boot.
+        """
+        self.authority_retained = "TRUE"
+        return {
+            "authority_retained": self.authority_retained,
+            "boot_epoch": self.boot_epoch,
+            "persisted_c_hw": self.committed_hw_counter,
+        }
+
     def receive_over_pty(self, master_fd: int, timeout_sec: float = 0.05) -> Dict[str, Any]:
         """
         Leser en 247-byte ramme fra en faktisk POSIX PTY file descriptor med select()-timeout.
-        Returnerer eksplisitt L2 loopback-dom (aldri falsk OPEN ved trunkering, bit-flip eller replay).
+        Returnerer eksplisitt L2 loopback-dom (aldri falsk OPEN ved trunkering, bit-flip, cold-boot eller replay).
         """
         buf = bytearray()
         while len(buf) < WIRE_TOTAL_FRAME_SIZE:
@@ -954,6 +966,18 @@ class CapsuleWireLoopbackNode:
                 "impedance_state": "LOW_Z_CROWBAR",
                 "bytes_received": len(buf),
                 "expected_bytes": WIRE_TOTAL_FRAME_SIZE,
+            }
+
+        # 0. Kaldstart-lås (BOOT_LOCKED 0x13): sjekkes FØR dekoding eller spenningsutgang tillates.
+        #    Overskriver ALDRI authority_retained tilbake til "TRUE" ved mottak av ramme.
+        if self.authority_retained != "TRUE":
+            return {
+                "status": "BOOT_LOCKED",
+                "verdict_code": 0x13,
+                "commanded_voltage_v": 0.00,
+                "impedance_state": "LOW_Z_CROWBAR",
+                "authority_retained": self.authority_retained,
+                "reason": "COLD_BOOT_L01_AUTHORIZATION_REQUIRED",
             }
 
         raw = bytes(buf)
@@ -1014,7 +1038,6 @@ class CapsuleWireLoopbackNode:
             }
 
         self.committed_hw_counter = seq_counter
-        self.authority_retained = "TRUE"
         return {
             "status": "L2_LOOPBACK_SIMULATED_EFFECT",
             "commanded_voltage_v": 5.00,

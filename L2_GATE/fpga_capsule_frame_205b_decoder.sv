@@ -14,7 +14,9 @@
 
 `timescale 1ns / 1ps
 
-module fpga_capsule_frame_205b_decoder (
+module fpga_capsule_frame_205b_decoder #(
+    parameter ENFORCE_MONOTONIC_SEQ = 1'b1
+) (
     input  wire          clk,
     input  wire          rst_n,
     input  wire          frame_valid,
@@ -87,23 +89,39 @@ module fpga_capsule_frame_205b_decoder (
                          (pre_w_pre_hash[223:192] != post_w_pre_hash[223:192]) ||
                          (pre_w_pre_hash[255:224] != post_w_pre_hash[255:224]);
 
+    // Monotonic sequence-id anti-replay guard (split 32-bit compare for iCE40 timing)
+    reg [63:0] last_seq_id_q;
+    reg        has_committed_q;
+
+    wire seq_gt_hi = (pre_seq_id[63:32] > last_seq_id_q[63:32]);
+    wire seq_eq_hi = (pre_seq_id[63:32] == last_seq_id_q[63:32]);
+    wire seq_gt_lo = (pre_seq_id[31:0]  > last_seq_id_q[31:0]);
+    wire seq_strictly_increasing = seq_gt_hi || (seq_eq_hi && seq_gt_lo);
+    wire seq_nonzero = (pre_seq_id[31:0] != 32'd0) || (pre_seq_id[63:32] != 32'd0);
+    wire seq_replay_violation = ENFORCE_MONOTONIC_SEQ &&
+                                (has_committed_q ? (!seq_strictly_increasing) : (!seq_nonzero));
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             capsule_linkage_ok <= 1'b0;
             v_gate_out_5v      <= 1'b0; // 0.00 V DC fail-closed on reset
             rtl_verdict_code   <= 8'h03;
+            last_seq_id_q      <= 64'd0;
+            has_committed_q    <= 1'b0;
         end else if (frame_valid) begin
-            // 1. Check cryptographic linkage between W_PRE (119B) and W_POST (86B)
-            if (seq_mismatch || hash_mismatch) begin
+            // 1. Check cryptographic linkage & strict monotonic sequence_id (anti-replay)
+            if (seq_mismatch || hash_mismatch || seq_replay_violation) begin
                 capsule_linkage_ok <= 1'b0;
                 v_gate_out_5v      <= 1'b0; // 0.00 V DC
-                rtl_verdict_code   <= 8'hFF; // TRAP_TAMPER (CapsuleLinkage mismatch)
+                rtl_verdict_code   <= 8'hFF; // TRAP_TAMPER (Linkage or Replay Violation)
             end
             // 2. Check HPIS Interlock Mismatch (gate_decision == OPEN (0x01), but latch == 0x00)
             else if (pre_gate_decision == 8'h01 && post_hpis_latch_byte == 8'h00) begin
                 capsule_linkage_ok <= 1'b1;
                 v_gate_out_5v      <= 1'b0; // 0.00 V DC
                 rtl_verdict_code   <= 8'hEE; // INTERLOCK_MISMATCH
+                last_seq_id_q      <= pre_seq_id;
+                has_committed_q    <= 1'b1;
             end
             // 3. Landauer Zero-Exhaust / IEEE-754 Subnormal-NaN Fraud -> 0.00 V DC TRAP_TAMPER
             else if (!exhaust_positive) begin
@@ -116,12 +134,16 @@ module fpga_capsule_frame_205b_decoder (
                 capsule_linkage_ok <= 1'b1;
                 v_gate_out_5v      <= 1'b1; // 5.00 V DC (SIMULATED_EFFECT in L1.5)
                 rtl_verdict_code   <= 8'h01; // SIMULATED_EFFECT
+                last_seq_id_q      <= pre_seq_id;
+                has_committed_q    <= 1'b1;
             end
             // 5. KILL / HOLD path: keep v_gate_out_5v = 0 with positive Landauer exhaust
             else begin
                 capsule_linkage_ok <= 1'b1;
                 v_gate_out_5v      <= 1'b0; // 0.00 V DC
                 rtl_verdict_code   <= 8'h03;
+                last_seq_id_q      <= pre_seq_id;
+                has_committed_q    <= 1'b1;
             end
         end
     end

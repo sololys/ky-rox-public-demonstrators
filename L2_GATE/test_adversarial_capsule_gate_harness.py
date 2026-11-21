@@ -344,16 +344,70 @@ class TestAdversarialCapsuleGateHarness(unittest.TestCase):
             self.assertEqual(res_trunc["commanded_voltage_v"], 0.00)
             self.assertEqual(res_trunc["bytes_received"], 140)
 
-            # 12D. Cold-Boot Reset (Delta_power_cycle) etterfulgt av Pre-Reboot Token replay -> KILL_PRE_REBOOT_WARRANT
+            # 12D. Cold-Boot Reset (Delta_power_cycle): blokkeres først i BOOT_LOCKED (0x13, 0.00 V DC),
+            #      og etter eksplisitt L01-autorisasjon avvises gammel pre-reboot warrant fortsatt via C <= C_hw!
             boot_state = node.simulate_cold_boot_reset()
             self.assertEqual(boot_state["authority_retained"], "FALSE")
             self.assertEqual(boot_state["persisted_c_hw"], 1)
 
             os.write(slave_fd, wire_frame_1)
+            res_boot_locked = node.receive_over_pty(master_fd)
+            self.assertEqual(res_boot_locked["status"], "BOOT_LOCKED")
+            self.assertEqual(res_boot_locked["verdict_code"], 0x13)
+            self.assertEqual(res_boot_locked["commanded_voltage_v"], 0.00)
+            self.assertEqual(res_boot_locked["authority_retained"], "FALSE")
+
+            node.authorize_l01_boot()
+            os.write(slave_fd, wire_frame_1)
             res_reboot_replay = node.receive_over_pty(master_fd)
             self.assertEqual(res_reboot_replay["status"], "KILL_PRE_REBOOT_WARRANT")
             self.assertEqual(res_reboot_replay["commanded_voltage_v"], 0.00)
-            self.assertEqual(res_reboot_replay["authority_retained"], "FALSE")
+        finally:
+            os.close(master_fd)
+            os.close(slave_fd)
+
+    def test_13_cold_boot_blocks_fresh_seq_until_l01_authorize(self) -> None:
+        """
+        Regresjonstest (Vektor 1): Kaldstart -> ny gyldig seq_counter -> må blokkeres
+        i BOOT_LOCKED (0x13, 0.00 V) helt til authorize_l01_boot() kalles eksplisitt.
+        """
+        master_fd, slave_fd = pty.openpty()
+        try:
+            node = CapsuleWireLoopbackNode()
+            node.configure_raw_pty(master_fd)
+            node.configure_raw_pty(slave_fd)
+
+            c1 = dict(self.valid_candidate, event_id="EVT_CB_1", nonce="NONCE_CB_1")
+            _, w1, _ = self.machine.project_pi_a(c1)
+            r1 = self.machine.execute_omega(c1, w1, hw_actuator_feedback_bit=1)
+
+            c2 = dict(self.valid_candidate, event_id="EVT_CB_2", nonce="NONCE_CB_2")
+            _, w2, _ = self.machine.project_pi_a(c2)
+            r2 = self.machine.execute_omega(c2, w2, hw_actuator_feedback_bit=1)
+
+            os.write(slave_fd, node.pack_wire_frame(r1))
+            res1 = node.receive_over_pty(master_fd)
+            self.assertEqual(res1["commanded_voltage_v"], 5.00)
+
+            # Kaldstart -> ny, gyldig seq_counter=2 må blokkeres på 0.00 V (BOOT_LOCKED 0x13)
+            node.simulate_cold_boot_reset()
+            wire_frame_2 = node.pack_wire_frame(r2)
+            os.write(slave_fd, wire_frame_2)
+            res_blocked = node.receive_over_pty(master_fd)
+            self.assertEqual(res_blocked["status"], "BOOT_LOCKED")
+            self.assertEqual(res_blocked["verdict_code"], 0x13)
+            self.assertEqual(res_blocked["commanded_voltage_v"], 0.00)
+            self.assertEqual(res_blocked["impedance_state"], "LOW_Z_CROWBAR")
+            self.assertEqual(node.authority_retained, "FALSE")
+
+            # Etter eksplisitt L01-autorisasjon slipper fersk seq_counter=2 igjennom til 5.00 V
+            auth = node.authorize_l01_boot()
+            self.assertEqual(auth["authority_retained"], "TRUE")
+            os.write(slave_fd, wire_frame_2)
+            res_open = node.receive_over_pty(master_fd)
+            self.assertEqual(res_open["status"], "L2_LOOPBACK_SIMULATED_EFFECT")
+            self.assertEqual(res_open["commanded_voltage_v"], 5.00)
+            self.assertEqual(res_open["committed_hw_counter"], 2)
         finally:
             os.close(master_fd)
             os.close(slave_fd)

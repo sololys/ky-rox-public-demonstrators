@@ -68,8 +68,10 @@ module tb_kpod_guillotine_and_205b_decoder;
     wire  [15:0]  a5_envelope_mv = (voltage_mv_out == 16'd5000) ? 16'd5000 :
                                    ((pre_gate_decision == 8'h02 && post_final_status == 8'h02 && capsule_linkage_ok && !trap_latched_out) ? 16'd2500 : 16'd0);
 
-    // 1. Instantiate 205-Byte Capsule Decoder
-    fpga_capsule_frame_205b_decoder u_decoder_205b (
+    // 1. Instantiate 205-Byte Capsule Decoder (legacy continuous frame_valid=1 bench)
+    fpga_capsule_frame_205b_decoder #(
+        .ENFORCE_MONOTONIC_SEQ(1'b0)
+    ) u_decoder_205b (
         .clk                  (clk_80khz),
         .rst_n                (rst_n),
         .frame_valid          (frame_valid),

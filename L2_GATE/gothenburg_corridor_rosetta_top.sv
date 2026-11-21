@@ -112,7 +112,9 @@ module gothenburg_corridor_rosetta_top #(
     wire        s213_linkage_ok;
     wire        s213_v_gate_5v;
 
-    fpga_capsule_frame_205b_decoder u_capsule_205b_decoder (
+    fpga_capsule_frame_205b_decoder #(
+        .ENFORCE_MONOTONIC_SEQ(1'b0)
+    ) u_capsule_205b_decoder (
         .clk                  (clk_sys_i),
         .rst_n                (rst_n_i),
         .frame_valid          (frame_valid_i),
