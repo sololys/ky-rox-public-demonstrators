@@ -19,6 +19,9 @@ sim_205b:
 	@rm -f /tmp/ky_rox_tb_205b.vvp
 
 sim_omega64:
+	@gcc -std=c11 -Wall -Wextra -Werror -o /tmp/ky_rox_test_omega_hal L2_GATE/omega_hal_pack.c L2_GATE/test_omega_hal_pack_c11.c
+	@/tmp/ky_rox_test_omega_hal
+	@rm -f /tmp/ky_rox_test_omega_hal
 	@iverilog -g2012 -o /tmp/ky_rox_tb_omega64.vvp L2_GATE/omega_symplectic_watchdog_64b.sv L2_GATE/tb_omega_symplectic_watchdog_64b.sv
 	@vvp /tmp/ky_rox_tb_omega64.vvp
 	@rm -f /tmp/ky_rox_tb_omega64.vvp
