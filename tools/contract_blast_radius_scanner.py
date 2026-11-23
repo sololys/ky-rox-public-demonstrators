@@ -180,6 +180,11 @@ def build_contract_graph(root: Path) -> dict:
                     pass
 
     edges = {k: sorted(v) for k, v in sorted(consumers.items()) if v}
+    file_hashes = {
+        rel: hashlib.sha256((root / rel).read_bytes()).hexdigest()
+        for rel in sorted(files)
+    }
+    source_tree_sha256 = sha256_canonical(file_hashes)
     graph_payload = {
         "file_count": len(files),
         "edge_count": sum(len(v) for v in edges.values()),
@@ -192,6 +197,7 @@ def build_contract_graph(root: Path) -> dict:
         "arithmetic": "EXACT_INTEGER_ZERO_FLOAT",
         "files": files,
         "edges": edges,
+        "source_tree_sha256": source_tree_sha256,
         "graph_sha256": sha256_canonical(graph_payload),
     }
 
@@ -205,6 +211,7 @@ def compute_blast_radius(graph: dict, target: str, hold_threshold: int = 3) -> d
             "direct_consumers": [],
             "transitive_consumers": [],
             "total_affected": 0,
+            "source_tree_sha256": graph["source_tree_sha256"],
             "graph_sha256": graph["graph_sha256"],
         }
 
@@ -240,7 +247,84 @@ def compute_blast_radius(graph: dict, target: str, hold_threshold: int = 3) -> d
         "total_affected": total_affected,
         "verdict": verdict,
         "reason": reason,
+        "source_tree_sha256": graph["source_tree_sha256"],
         "graph_sha256": graph["graph_sha256"],
+    }
+
+
+def append_audit_record(log_path: Path, report: dict, run_id: str | None = None) -> dict:
+    """
+    Appends one tamper-evident SHA-256-chained JSONL record.
+    Software append-only hash chain ONLY (not physical WORM hardware).
+    Authority(W) = NONE.
+    """
+    prev_hash = "0" * 64
+    seq_index = 1
+    if log_path.is_file():
+        lines = [ln for ln in log_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        if lines:
+            last = json.loads(lines[-1])
+            prev_hash = str(last["record_sha256"])
+            seq_index = len(lines) + 1
+
+    affected = sorted(set(report.get("direct_consumers", [])) | set(report.get("transitive_consumers", [])))
+    body = {
+        "affected_nodes": affected,
+        "graph_sha256": report["graph_sha256"],
+        "ledger_class": "APPEND_ONLY_SHA256_JSONL_NOT_PHYSICAL_WORM",
+        "previous_log_hash": prev_hash,
+        "reason_codes": [report["reason"]],
+        "run_id": run_id if run_id is not None else f"RUN-{seq_index:06d}",
+        "source_tree_sha256": report["source_tree_sha256"],
+        "target": report["target"],
+        "verdict": report["verdict"],
+        "witness_authority": WITNESS_AUTHORITY,
+    }
+    record_hash = sha256_canonical(body)
+    record = dict(body)
+    record["record_sha256"] = record_hash
+
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
+    return record
+
+
+def verify_audit_log(log_path: Path) -> dict:
+    """Verifies the full SHA-256 hash chain from genesis (0*64). Fails closed to KILL."""
+    if not log_path.is_file():
+        return {"verdict": "KILL", "reason": "LOG_FILE_NOT_FOUND", "records": 0}
+
+    expected_prev = "0" * 64
+    lines = [ln for ln in log_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    if not lines:
+        return {"verdict": "KILL", "reason": "EMPTY_AUDIT_LOG", "records": 0}
+
+    for idx, line in enumerate(lines, 1):
+        try:
+            rec = json.loads(line)
+        except Exception:
+            return {"verdict": "KILL", "reason": "MALFORMED_JSON", "line": idx}
+
+        if rec.get("previous_log_hash") != expected_prev:
+            return {"verdict": "KILL", "reason": "BROKEN_CHAIN_LINK", "line": idx}
+
+        if rec.get("witness_authority") != WITNESS_AUTHORITY:
+            return {"verdict": "KILL", "reason": "INVALID_WITNESS_AUTHORITY", "line": idx}
+
+        stored = rec.get("record_sha256")
+        body = {k: v for k, v in rec.items() if k != "record_sha256"}
+        if sha256_canonical(body) != stored:
+            return {"verdict": "KILL", "reason": "RECORD_HASH_MISMATCH", "line": idx}
+
+        expected_prev = str(stored)
+
+    return {
+        "verdict": "PASS",
+        "records": len(lines),
+        "tip_sha256": expected_prev,
+        "ledger_class": "APPEND_ONLY_SHA256_JSONL_NOT_PHYSICAL_WORM",
+        "witness_authority": WITNESS_AUTHORITY,
     }
 
 
@@ -249,11 +333,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", default=".", help="Repository root to scan")
     parser.add_argument("--target", default="", help="Relative path to assess blast radius for")
     parser.add_argument("--hold-threshold", type=int, default=3, help="Affected file count triggering HOLD")
+    parser.add_argument("--append-log", default="", help="Append SHA-256 chained audit record to JSONL file")
+    parser.add_argument("--verify-log", default="", help="Verify an existing JSONL audit chain and exit")
     args = parser.parse_args(argv)
+
+    if args.verify_log:
+        res = verify_audit_log(Path(args.verify_log))
+        print(json.dumps(res, indent=2, sort_keys=True))
+        return 0 if res["verdict"] == "PASS" else 2
 
     graph = build_contract_graph(Path(args.root))
     if args.target:
         report = compute_blast_radius(graph, args.target, hold_threshold=args.hold_threshold)
+        if args.append_log:
+            rec = append_audit_record(Path(args.append_log), report)
+            report["audit_record_sha256"] = rec["record_sha256"]
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["verdict"] != "KILL" else 2
 
@@ -262,6 +356,7 @@ def main(argv: list[str] | None = None) -> int:
         "arithmetic": graph["arithmetic"],
         "files_scanned": len(graph["files"]),
         "dependency_edges": sum(len(v) for v in graph["edges"].values()),
+        "source_tree_sha256": graph["source_tree_sha256"],
         "graph_sha256": graph["graph_sha256"],
         "witness_authority": WITNESS_AUTHORITY,
     }
