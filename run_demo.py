@@ -62,6 +62,13 @@ MICROTESTS = (
         "pwr2_scrambling_collective_gate.py",
         "test_pwr2_scrambling_collective_gate.py",
     ),
+    (
+        "7. SOSIONOMOS",
+        "Sosionomos XOR/ROX Gate v0.1 (0 float)",
+        "sosionomos_xor_rox_gate_v0_1",
+        "sosionomos_xor_rox_gate.py",
+        "test_sosionomos_xor_rox_gate.py",
+    ),
 )
 
 
@@ -132,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
         check=True,
     )
     total_suites += 1
-    print(f"  [PASS 6/6] {'7. HORISONT I':<14} :: {'Staggered-PRF Fine-Wilf SDR Gate v0.1':<38} (SHA-256 OK)")
+    print(f"  [PASS 6/6] {'8. HORISONT I':<14} :: {'Staggered-PRF Fine-Wilf SDR Gate v0.1':<38} (SHA-256 OK)")
 
     subprocess.run(
         [sys.executable, str(ROOT / "monoliths" / "spec412_415_domain_gates.py")],
@@ -141,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
         check=True,
     )
     total_suites += 1
-    print(f"  [PASS 6/6] {'8. SPEC-412..415':<14} :: {'Forlik / Orbital / Radar / K-POD v2.0':<38} (SHA-256 OK)")
+    print(f"  [PASS 6/6] {'9. SPEC-412..415':<14} :: {'Forlik / Orbital / Radar / K-POD v2.0':<38} (SHA-256 OK)")
 
     subprocess.run(
         [sys.executable, "-m", "unittest", "L1_LAW/test_ky_v15_clean_parser.py"],
@@ -150,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
         check=True,
     )
     total_suites += 1
-    print(f"  [PASS 6/6] {'9. KY v1.5':<14} :: {'KY Realization Grammar v1.5 (0 float)':<38} (L1_LAW OK)")
+    print(f"  [PASS 6/6] {'10. KY v1.5':<14} :: {'KY Realization Grammar v1.5 (0 float)':<38} (L1_LAW OK)")
 
     print("-" * 78)
     surface_res = subprocess.run(

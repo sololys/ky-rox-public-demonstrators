@@ -1,0 +1,39 @@
+{
+  "arithmetic": "ZERO_FLOAT_EXACT",
+  "gate": "SOSIONOMOS_XOR_ROX_v0.1",
+  "public_nodes": 3,
+  "results": [
+    {
+      "decision": "OPEN",
+      "expected": "OPEN",
+      "id": "C1_CALM_OPEN"
+    },
+    {
+      "decision": "HOLD",
+      "expected": "HOLD",
+      "id": "C2_HOT_HOLD"
+    },
+    {
+      "decision": "OPEN",
+      "expected": "OPEN",
+      "id": "C3_REVISED_OPEN"
+    },
+    {
+      "decision": "KILL",
+      "expected": "KILL",
+      "id": "C4_MASK_MUTATED_KILL"
+    },
+    {
+      "decision": "KILL",
+      "expected": "KILL",
+      "id": "C5_SUPERPOSITION_KILL"
+    },
+    {
+      "decision": "TRAP",
+      "expected": "TRAP",
+      "id": "C6_BOT_BACKPRESSURE_TRAP"
+    }
+  ],
+  "shadow_nodes": 1,
+  "witness_chain_valid": true
+}

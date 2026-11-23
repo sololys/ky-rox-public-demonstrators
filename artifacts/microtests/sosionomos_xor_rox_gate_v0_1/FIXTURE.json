@@ -1,0 +1,77 @@
+{
+  "spec": "OMNI_KY_SUSY2_SOSIONOMOS_BRIDGE_SPEC_v1.0",
+  "arithmetic": "EXACT_INT_AND_FRACTION_ZERO_FLOAT",
+  "cases": [
+    {
+      "id": "C1_CALM_OPEN",
+      "actor_id": "alice",
+      "payload": "anchored_signal_1",
+      "sequence": 1,
+      "excitation": 50,
+      "reach_n": 10,
+      "created_tick": 0,
+      "eval_tick": 0,
+      "expected": "OPEN"
+    },
+    {
+      "id": "C2_HOT_HOLD",
+      "actor_id": "alice",
+      "payload": "high_arousal_draft",
+      "sequence": 2,
+      "excitation": 700,
+      "reach_n": 80,
+      "created_tick": 10,
+      "eval_tick": 15,
+      "expected": "HOLD"
+    },
+    {
+      "id": "C3_REVISED_OPEN",
+      "actor_id": "alice",
+      "payload": "revised_calm_draft",
+      "sequence": 2,
+      "excitation": 90,
+      "reach_n": 15,
+      "created_tick": 16,
+      "eval_tick": 16,
+      "expected": "OPEN"
+    },
+    {
+      "id": "C4_MASK_MUTATED_KILL",
+      "actor_id": "alice",
+      "payload": "tampered_phase",
+      "sequence": 3,
+      "excitation": 20,
+      "reach_n": 5,
+      "created_tick": 20,
+      "eval_tick": 20,
+      "mask_out": 43690,
+      "mask_back": 43691,
+      "expected": "KILL"
+    },
+    {
+      "id": "C5_SUPERPOSITION_KILL",
+      "actor_id": "alice",
+      "payload": "illegal_state_0x03",
+      "sequence": 3,
+      "excitation": 20,
+      "reach_n": 5,
+      "created_tick": 21,
+      "eval_tick": 21,
+      "state_byte": 3,
+      "expected": "KILL"
+    },
+    {
+      "id": "C6_BOT_BACKPRESSURE_TRAP",
+      "actor_id": "bot_spam",
+      "arena_capacity": 10,
+      "used_in": 9,
+      "payload": "flood_burst",
+      "sequence": 1,
+      "excitation": 10,
+      "reach_n": 5,
+      "created_tick": 25,
+      "eval_tick": 25,
+      "expected": "TRAP"
+    }
+  ]
+}
