@@ -28,6 +28,7 @@ L2_GATE/fpga_witness_ledger_engine.py
 L2_GATE/gothenburg_corridor_rosetta_top.sv
 L2_GATE/kpod_fpga_guillotine_12u5.sv
 L2_GATE/omega_hal_pack.c
+L2_GATE/omega_qnx_resmgr.c
 L2_GATE/omega_spi_frame_64b.h
 L2_GATE/omega_symplectic_watchdog_64b.sv
 L2_GATE/registry_b_dlatch_telemetry_protocol.py

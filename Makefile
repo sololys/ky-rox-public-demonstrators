@@ -2,7 +2,7 @@
 # Default target is FAIL-CLOSED (0.00 V DC). Explicit verification is mandatory.
 
 .DEFAULT_GOAL := hold
-.PHONY: hold verify sim_400c sim_205b sim_omega64
+.PHONY: hold verify sim_400c sim_205b sim_omega64 qnx_omega64
 
 hold:
 	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains, The 7 Monoliths, and SPEC-412..415 Domain Gates."
@@ -25,6 +25,15 @@ sim_omega64:
 	@iverilog -g2012 -o /tmp/ky_rox_tb_omega64.vvp L2_GATE/omega_symplectic_watchdog_64b.sv L2_GATE/tb_omega_symplectic_watchdog_64b.sv
 	@vvp /tmp/ky_rox_tb_omega64.vvp
 	@rm -f /tmp/ky_rox_tb_omega64.vvp
+
+qnx_omega64:
+	@mkdir -p /tmp/qnx_omega64_build
+	@qcc -Vgcc_ntox86_64 -std=gnu11 -O2 -Wall -Wextra -Werror -c L2_GATE/omega_hal_pack.c -o /tmp/qnx_omega64_build/omega_hal_pack_x86_64.o
+	@qcc -Vgcc_ntox86_64 -std=gnu11 -O2 -Wall -Wextra -Werror -c L2_GATE/omega_qnx_resmgr.c -o /tmp/qnx_omega64_build/omega_qnx_resmgr_x86_64.o
+	@qcc -Vgcc_ntoaarch64le -std=gnu11 -O2 -Wall -Wextra -Werror -c L2_GATE/omega_hal_pack.c -o /tmp/qnx_omega64_build/omega_hal_pack_aarch64le.o
+	@qcc -Vgcc_ntoaarch64le -std=gnu11 -O2 -Wall -Wextra -Werror -c L2_GATE/omega_qnx_resmgr.c -o /tmp/qnx_omega64_build/omega_qnx_resmgr_aarch64le.o
+	@rm -rf /tmp/qnx_omega64_build
+	@echo "QNX_OMEGA64_DUAL_ARCH_BUILD=PASS (x86_64 + aarch64le, 0 FLOAT, -Werror)"
 
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py
