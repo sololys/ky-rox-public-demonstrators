@@ -97,9 +97,12 @@ record/README.md
 released/README.md
 run_demo.py
 tools/agy_ky_blackbox_harness.py
+tools/blast_sphere_viewer.html
 tools/contract_blast_radius_scanner.py
+tools/export_blast_sphere.py
 tools/test_agy_ky_blackbox_harness.py
 tools/test_contract_blast_radius_scanner.py
+tools/test_export_blast_sphere.py
 tools/verify_public_surface.py
 demos/granite-sg48-etor-cascade/.gitignore
 demos/granite-sg48-etor-cascade/index.html

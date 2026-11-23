@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KY-ROX · 3D Contract &amp; Blast-Radius Sphere (0.00 V DC · Read-Only)</title>
+  <style>
+    :root {
+      --bg: #e6e1d6;
+      --panel: #efeae0;
+      --ink: #222629;
+      --muted: #5a6065;
+      --rule: #c8c1b4;
+      --open: #3d6347;
+      --hold: #a87424;
+      --kill: #9b352c;
+      --accent: #2c353d;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 310px 1fr 330px;
+      grid-template-rows: auto 1fr auto;
+      height: 100%;
+    }
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--rule);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .meta-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button, .file-label {
+      background: var(--bg);
+      color: var(--ink);
+      border: 1px solid var(--rule);
+      padding: 5px 10px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:hover, .file-label:hover {
+      border-color: var(--ink);
+    }
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    aside {
+      background: var(--panel);
+      overflow-y: auto;
+      padding: 12px;
+    }
+    aside.left { border-right: 1px solid var(--rule); }
+    aside.right { border-left: 1px solid var(--rule); }
+    .search-box {
+      width: 100%;
+      padding: 6px 8px;
+      margin-bottom: 10px;
+      background: var(--bg);
+      color: var(--ink);
+      border: 1px solid var(--rule);
+      font: inherit;
+    }
+    .node-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .node-list li {
+      margin-bottom: 4px;
+    }
+    .node-btn {
+      width: 100%;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 5px 7px;
+      background: transparent;
+      border: 1px solid transparent;
+      font-size: 11.5px;
+    }
+    .node-btn[aria-current="true"] {
+      background: var(--bg);
+      border-color: var(--ink);
+      font-weight: 700;
+    }
+    .tag {
+      font-size: 10px;
+      padding: 1px 5px;
+      border: 1px solid currentColor;
+      flex-shrink: 0;
+    }
+    .tag.OPEN { color: var(--open); }
+    .tag.HOLD { color: var(--hold); }
+    .tag.KILL { color: var(--kill); }
+    main {
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 48%, #ede8dd 0%, #dfd9cc 100%);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    canvas:active { cursor: grabbing; }
+    .hud-hint {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(239, 234, 224, 0.88);
+      padding: 4px 8px;
+      border: 1px solid var(--rule);
+      pointer-events: none;
+    }
+    .plate-title {
+      margin: 0 0 8px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 4px;
+    }
+    .kv {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 4px 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; }
+    .consumer-list {
+      margin: 4px 0 12px;
+      padding-left: 16px;
+      font-size: 11.5px;
+    }
+    footer {
+      grid-column: 1 / -1;
+      padding: 6px 16px;
+      background: var(--panel);
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 200px 420px auto auto;
+      }
+      aside.left, aside.right { border: none; border-bottom: 1px solid var(--rule); }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header>
+      <div>
+        <h1>KY-ROX // 3D CONTRACT &amp; BLAST-RADIUS SPHERE</h1>
+        <div class="meta-strip">
+          <span>PASSIVE GLASS VIEWER (READ-ONLY)</span>
+          <span>AUTHORITY(W) = NONE</span>
+          <span>0.00 V DC</span>
+          <span id="metaCounts">NODES: 0 · EDGES: 0</span>
+        </div>
+      </div>
+      <div class="controls">
+        <label class="file-label" for="manifestInput">Load Manifest JSON</label>
+        <input id="manifestInput" type="file" accept=".json,application/json" hidden>
+        <button id="resetViewBtn" type="button">Reset View</button>
+      </div>
+    </header>
+
+    <aside class="left" aria-label="Contract nodes">
+      <input id="filterInput" class="search-box" type="search" placeholder="Filter contracts (.py, .sv, .json, .md)" aria-label="Filter contracts">
+      <ul id="nodeList" class="node-list"></ul>
+    </aside>
+
+    <main>
+      <canvas id="sphereCanvas" aria-label="Interactive 3D contract and blast-radius sphere"></canvas>
+      <div class="hud-hint">Drag: rotate 3D · Scroll: zoom · Click node: inspect blast radius</div>
+    </main>
+
+    <aside class="right" aria-label="Selected contract inspection plate">
+      <h2 class="plate-title">Status Plate (Read-Only)</h2>
+      <dl class="kv" id="statusKv"></dl>
+      <h2 class="plate-title">Direct Consumers (r = 1)</h2>
+      <ul class="consumer-list" id="directList"></ul>
+      <h2 class="plate-title">Transitive Consumers (r &gt;= 2)</h2>
+      <ul class="consumer-list" id="transitiveList"></ul>
+      <h2 class="plate-title">Export Usage</h2>
+      <p style="font-size:11px;color:var(--muted);margin:0;">
+        Generate fresh 0-float manifest:<br>
+        <code>PYTHONPATH=tools python3 tools/export_blast_sphere.py --root . --out /tmp/blast_sphere_manifest.json</code><br>
+        Then click <strong>Load Manifest JSON</strong>.
+      </p>
+    </aside>
+
+    <footer>
+      <span>INSPIRED_BY != IMPLEMENTS != PROVES · RENDERED != AUTHORIZED</span>
+      <span id="hashFooter">graph_sha256: —</span>
+    </footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    // Default embedded 0-float sample snapshot (zero network calls, 100% offline)
+    const DEFAULT_MANIFEST = {
+      schema: "KY_ROX_BLAST_SPHERE_v0.1",
+      root: "ky-rox-public-demonstrators",
+      arithmetic: "EXACT_INTEGER_ZERO_FLOAT",
+      physical_authority: "NONE",
+      witness_authority: "NONE",
+      rendered_not_authorized: true,
+      hold_threshold: 3,
+      graph_sha256: "sample-offline-load-manifest-for-live-tree",
+      nodes: [
+        { id: "L1_LAW/invariants_pure.py", layer: "L1_LAW", kind: "python", ix: 420, iy: 0, iz: -300, float_constants: 0, direct_consumers: ["L2_GATE/evaluate_boundaries.py", "README.md"], transitive_consumers: [], total_affected: 2, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" },
+        { id: "L2_GATE/fpga_capsule_frame_205b_decoder.sv", layer: "L2_GATE", kind: "systemverilog", ix: 0, iy: 0, iz: -100, float_constants: 0, direct_consumers: ["L2_GATE/gothenburg_corridor_rosetta_top.sv", "L2_GATE/tb_kpod_guillotine_and_205b_decoder.sv", "README.md"], transitive_consumers: [], total_affected: 3, verdict: "HOLD", reason: "HIGH_BLAST_RADIUS_REQUIRES_VERIFICATION" },
+        { id: "L2_GATE/gothenburg_corridor_rosetta_top.sv", layer: "L2_GATE", kind: "systemverilog", ix: 480, iy: 190, iz: -100, float_constants: 0, direct_consumers: ["README.md"], transitive_consumers: [], total_affected: 1, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" },
+        { id: "L2_GATE/tb_kpod_guillotine_and_205b_decoder.sv", layer: "L2_GATE", kind: "systemverilog", ix: -480, iy: 190, iz: -100, float_constants: 0, direct_consumers: [], transitive_consumers: [], total_affected: 0, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" },
+        { id: "L2_GATE/evaluate_boundaries.py", layer: "L2_GATE", kind: "python", ix: 0, iy: -520, iz: -100, float_constants: 0, direct_consumers: ["README.md"], transitive_consumers: [], total_affected: 1, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" },
+        { id: "artifacts/microtests/sosionomos_xor_rox_gate_v0_1/sosionomos_xor_rox_gate.py", layer: "microtests", kind: "python", ix: 430, iy: -430, iz: 100, float_constants: 0, direct_consumers: ["artifacts/microtests/sosionomos_xor_rox_gate_v0_1/test_sosionomos_xor_rox_gate.py"], transitive_consumers: [], total_affected: 1, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" },
+        { id: "artifacts/microtests/sosionomos_xor_rox_gate_v0_1/test_sosionomos_xor_rox_gate.py", layer: "microtests", kind: "python", ix: -430, iy: -430, iz: 100, float_constants: 0, direct_consumers: [], transitive_consumers: [], total_affected: 0, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" },
+        { id: "tools/contract_blast_radius_scanner.py", layer: "tools", kind: "python", ix: 320, iy: 320, iz: 300, float_constants: 0, direct_consumers: ["tools/agy_ky_blackbox_harness.py", "tools/export_blast_sphere.py", "tools/test_contract_blast_radius_scanner.py"], transitive_consumers: ["tools/test_agy_ky_blackbox_harness.py", "tools/test_export_blast_sphere.py"], total_affected: 5, verdict: "HOLD", reason: "HIGH_BLAST_RADIUS_REQUIRES_VERIFICATION" },
+        { id: "tools/agy_ky_blackbox_harness.py", layer: "tools", kind: "python", ix: -320, iy: 320, iz: 300, float_constants: 0, direct_consumers: ["tools/test_agy_ky_blackbox_harness.py"], transitive_consumers: [], total_affected: 1, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" },
+        { id: "tools/export_blast_sphere.py", layer: "tools", kind: "python", ix: 0, iy: 460, iz: 300, float_constants: 0, direct_consumers: ["tools/test_export_blast_sphere.py"], transitive_consumers: [], total_affected: 1, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" },
+        { id: "README.md", layer: "surface", kind: "markdown", ix: 0, iy: 280, iz: 0, float_constants: 0, direct_consumers: [], transitive_consumers: [], total_affected: 0, verdict: "OPEN", reason: "BOUNDED_LOCAL_BLAST_RADIUS" }
+      ],
+      edges: [
+        { from: "L1_LAW/invariants_pure.py", to: "L2_GATE/evaluate_boundaries.py" },
+        { from: "L1_LAW/invariants_pure.py", to: "README.md" },
+        { from: "L2_GATE/fpga_capsule_frame_205b_decoder.sv", to: "L2_GATE/gothenburg_corridor_rosetta_top.sv" },
+        { from: "L2_GATE/fpga_capsule_frame_205b_decoder.sv", to: "L2_GATE/tb_kpod_guillotine_and_205b_decoder.sv" },
+        { from: "L2_GATE/fpga_capsule_frame_205b_decoder.sv", to: "README.md" },
+        { from: "tools/contract_blast_radius_scanner.py", to: "tools/agy_ky_blackbox_harness.py" },
+        { from: "tools/contract_blast_radius_scanner.py", to: "tools/export_blast_sphere.py" },
+        { from: "artifacts/microtests/sosionomos_xor_rox_gate_v0_1/sosionomos_xor_rox_gate.py", to: "artifacts/microtests/sosionomos_xor_rox_gate_v0_1/test_sosionomos_xor_rox_gate.py" }
+      ]
+    };
+
+    const COLORS = {
+      OPEN: "#3d6347",
+      HOLD: "#a87424",
+      KILL: "#9b352c",
+      BASE: "#4b5258",
+      RING: "rgba(90, 96, 101, 0.22)",
+      EDGE_DIM: "rgba(90, 96, 101, 0.14)",
+      EDGE_DIRECT: "#9b352c",
+      EDGE_TRANS: "#a87424"
+    };
+
+    let manifest = DEFAULT_MANIFEST;
+    let nodeMap = new Map();
+    let selectedId = "L2_GATE/fpga_capsule_frame_205b_decoder.sv";
+    let yaw = 0.55;
+    let pitch = 0.42;
+    let zoom = 1.0;
+    let projected = [];
+    let dragging = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    const canvas = document.getElementById("sphereCanvas");
+    const ctx = canvas.getContext("2d");
+    const nodeListEl = document.getElementById("nodeList");
+    const filterInput = document.getElementById("filterInput");
+    const statusKv = document.getElementById("statusKv");
+    const directList = document.getElementById("directList");
+    const transitiveList = document.getElementById("transitiveList");
+    const metaCounts = document.getElementById("metaCounts");
+    const hashFooter = document.getElementById("hashFooter");
+
+    function loadManifest(data) {
+      if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) {
+        return;
+      }
+      manifest = data;
+      nodeMap = new Map(manifest.nodes.map((n) => [n.id, n]));
+      if (!nodeMap.has(selectedId) && manifest.nodes.length > 0) {
+        selectedId = manifest.nodes[0].id;
+      }
+      metaCounts.textContent = `NODES: ${manifest.nodes.length} · EDGES: ${manifest.edges.length}`;
+      hashFooter.textContent = `graph_sha256: ${manifest.graph_sha256 || "—"}`;
+      renderList();
+      renderPlate();
+      draw();
+    }
+
+    function renderList() {
+      const q = filterInput.value.trim().toLowerCase();
+      nodeListEl.textContent = "";
+      for (const n of manifest.nodes) {
+        if (q && !n.id.toLowerCase().includes(q) && !n.layer.toLowerCase().includes(q)) {
+          continue;
+        }
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "node-btn";
+        btn.setAttribute("aria-current", n.id === selectedId ? "true" : "false");
+
+        const label = document.createElement("span");
+        label.textContent = n.id;
+        const tag = document.createElement("span");
+        tag.className = `tag ${n.verdict}`;
+        tag.textContent = n.verdict;
+
+        btn.append(label, tag);
+        btn.addEventListener("click", () => {
+          selectedId = n.id;
+          renderList();
+          renderPlate();
+          draw();
+        });
+        li.appendChild(btn);
+        nodeListEl.appendChild(li);
+      }
+    }
+
+    function addKv(dtText, ddText) {
+      const dt = document.createElement("dt");
+      dt.textContent = dtText;
+      const dd = document.createElement("dd");
+      dd.textContent = String(ddText);
+      statusKv.append(dt, dd);
+    }
+
+    function renderPlate() {
+      const n = nodeMap.get(selectedId);
+      statusKv.textContent = "";
+      directList.textContent = "";
+      transitiveList.textContent = "";
+      if (!n) return;
+
+      addKv("target", n.id);
+      addKv("layer", n.layer);
+      addKv("kind", n.kind);
+      addKv("verdict", n.verdict);
+      addKv("reason", n.reason);
+      addKv("total_affected", n.total_affected);
+      addKv("float_constants", n.float_constants);
+      addKv("coords (int)", `(${n.ix}, ${n.iy}, ${n.iz})`);
+      addKv("authority(W)", manifest.witness_authority || "NONE");
+
+      for (const item of (n.direct_consumers || [])) {
+        const li = document.createElement("li");
+        li.textContent = item;
+        directList.appendChild(li);
+      }
+      if (!n.direct_consumers || n.direct_consumers.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "(none)";
+        directList.appendChild(li);
+      }
+      for (const item of (n.transitive_consumers || [])) {
+        const li = document.createElement("li");
+        li.textContent = item;
+        transitiveList.appendChild(li);
+      }
+      if (!n.transitive_consumers || n.transitive_consumers.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "(none)";
+        transitiveList.appendChild(li);
+      }
+    }
+
+    function projectPoint(ix, iy, iz, cx, cy, scale) {
+      const cyaw = Math.cos(yaw), syaw = Math.sin(yaw);
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const x1 = ix * cyaw - iy * syaw;
+      const y1 = ix * syaw + iy * cyaw;
+      const y2 = y1 * cp - iz * sp;
+      const z2 = y1 * sp + iz * cp;
+      const persp = 1500 / (1500 + z2);
+      return {
+        sx: cx + x1 * scale * persp,
+        sy: cy + y2 * scale * persp,
+        depth: z2,
+        persp
+      };
+    }
+
+    function draw() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const w = rect.width;
+      const h = rect.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = (Math.min(w, h) / 1550) * zoom;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw concentric architectural layer planes
+      for (const [zPlane, rad] of [[-300, 420], [-100, 520], [100, 620], [300, 460]]) {
+        ctx.beginPath();
+        for (let i = 0; i <= 48; i++) {
+          const a = (i / 48) * Math.PI * 2;
+          const p = projectPoint(Math.cos(a) * rad, Math.sin(a) * rad, zPlane, cx, cy, scale);
+          if (i === 0) ctx.moveTo(p.sx, p.sy);
+          else ctx.lineTo(p.sx, p.sy);
+        }
+        ctx.strokeStyle = COLORS.RING;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      const sel = nodeMap.get(selectedId);
+      const directSet = new Set(sel ? sel.direct_consumers : []);
+      const transSet = new Set(sel ? sel.transitive_consumers : []);
+
+      projected = manifest.nodes.map((n) => {
+        const p = projectPoint(n.ix, n.iy, n.iz, cx, cy, scale);
+        return { node: n, ...p };
+      });
+      const projById = new Map(projected.map((p) => [p.node.id, p]));
+
+      // Draw edges
+      for (const e of manifest.edges) {
+        const a = projById.get(e.from);
+        const b = projById.get(e.to);
+        if (!a || !b) continue;
+        const isDirect = e.from === selectedId && directSet.has(e.to);
+        const isTrans = (directSet.has(e.from) || transSet.has(e.from)) && transSet.has(e.to);
+        ctx.beginPath();
+        ctx.moveTo(a.sx, a.sy);
+        ctx.lineTo(b.sx, b.sy);
+        if (isDirect) {
+          ctx.strokeStyle = COLORS.EDGE_DIRECT;
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([]);
+        } else if (isTrans) {
+          ctx.strokeStyle = COLORS.EDGE_TRANS;
+          ctx.lineWidth = 1.6;
+          ctx.setLineDash([5, 4]);
+        } else {
+          ctx.strokeStyle = COLORS.EDGE_DIM;
+          ctx.lineWidth = 0.8;
+          ctx.setLineDash([]);
+        }
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // Painter's algorithm (back to front)
+      projected.sort((a, b) => b.depth - a.depth);
+      for (const item of projected) {
+        const n = item.node;
+        const isSel = n.id === selectedId;
+        const isDirect = directSet.has(n.id);
+        const isTrans = transSet.has(n.id);
+        const r = (isSel ? 8.5 : (isDirect || isTrans ? 6.5 : 4.2)) * item.persp;
+
+        ctx.beginPath();
+        ctx.arc(item.sx, item.sy, r, 0, Math.PI * 2);
+        ctx.fillStyle = isSel ? COLORS[n.verdict] : (isDirect ? COLORS.EDGE_DIRECT : (isTrans ? COLORS.EDGE_TRANS : COLORS.BASE));
+        ctx.fill();
+        if (isSel || isDirect || isTrans) {
+          ctx.strokeStyle = "#222629";
+          ctx.lineWidth = isSel ? 2 : 1;
+          ctx.stroke();
+          ctx.fillStyle = "#222629";
+          ctx.font = isSel ? "700 11px ui-monospace, monospace" : "10px ui-monospace, monospace";
+          ctx.fillText(n.id.split("/").pop(), item.sx + r + 5, item.sy + 3);
+        }
+      }
+    }
+
+    canvas.addEventListener("pointerdown", (ev) => {
+      dragging = true;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      canvas.setPointerCapture(ev.pointerId);
+    });
+    canvas.addEventListener("pointermove", (ev) => {
+      if (!dragging) return;
+      yaw += (ev.clientX - lastX) * 0.007;
+      pitch = Math.max(-1.4, Math.min(1.4, pitch + (ev.clientY - lastY) * 0.007));
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      draw();
+    });
+    canvas.addEventListener("pointerup", (ev) => {
+      if (!dragging) return;
+      dragging = false;
+      canvas.releasePointerCapture(ev.pointerId);
+    });
+    canvas.addEventListener("click", (ev) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = ev.clientX - rect.left;
+      const my = ev.clientY - rect.top;
+      let best = null;
+      let bestDist = 18;
+      for (const item of projected) {
+        const d = Math.hypot(item.sx - mx, item.sy - my);
+        if (d < bestDist) {
+          bestDist = d;
+          best = item.node.id;
+        }
+      }
+      if (best) {
+        selectedId = best;
+        renderList();
+        renderPlate();
+        draw();
+      }
+    });
+    canvas.addEventListener("wheel", (ev) => {
+      ev.preventDefault();
+      zoom = Math.max(0.45, Math.min(2.6, zoom * (ev.deltaY > 0 ? 0.92 : 1.08)));
+      draw();
+    }, { passive: false });
+
+    filterInput.addEventListener("input", renderList);
+    document.getElementById("resetViewBtn").addEventListener("click", () => {
+      yaw = 0.55;
+      pitch = 0.42;
+      zoom = 1.0;
+      draw();
+    });
+    document.getElementById("manifestInput").addEventListener("change", (ev) => {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          loadManifest(JSON.parse(String(reader.result)));
+        } catch (_err) {
+          hashFooter.textContent = "KILL: INVALID_MANIFEST_JSON";
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    });
+
+    window.addEventListener("resize", draw);
+    loadManifest(DEFAULT_MANIFEST);
+  </script>
+</body>
+</html>
