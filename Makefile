@@ -2,7 +2,7 @@
 # Default target is FAIL-CLOSED (0.00 V DC). Explicit verification is mandatory.
 
 .DEFAULT_GOAL := hold
-.PHONY: hold verify sim_400c sim_205b
+.PHONY: hold verify sim_400c sim_205b sim_omega64
 
 hold:
 	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains, The 7 Monoliths, and SPEC-412..415 Domain Gates."
@@ -17,6 +17,11 @@ sim_205b:
 	@iverilog -g2012 -o /tmp/ky_rox_tb_205b.vvp L2_GATE/fpga_capsule_frame_205b_decoder.sv L2_GATE/kpod_fpga_guillotine_12u5.sv L2_GATE/tb_kpod_guillotine_and_205b_decoder.sv
 	@vvp /tmp/ky_rox_tb_205b.vvp
 	@rm -f /tmp/ky_rox_tb_205b.vvp
+
+sim_omega64:
+	@iverilog -g2012 -o /tmp/ky_rox_tb_omega64.vvp L2_GATE/omega_symplectic_watchdog_64b.sv L2_GATE/tb_omega_symplectic_watchdog_64b.sv
+	@vvp /tmp/ky_rox_tb_omega64.vvp
+	@rm -f /tmp/ky_rox_tb_omega64.vvp
 
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py
