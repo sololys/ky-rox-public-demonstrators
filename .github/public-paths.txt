@@ -108,3 +108,5 @@ demos/granite-sg48-etor-cascade/src/sim/etorProtocol.ts
 demos/granite-sg48-etor-cascade/tailwind.config.js
 demos/granite-sg48-etor-cascade/tsconfig.json
 demos/granite-sg48-etor-cascade/vite.config.ts
+CONTRIBUTING.md
+tools/check_dco_and_zero_float.sh
