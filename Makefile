@@ -2,7 +2,7 @@
 # Default target is FAIL-CLOSED (0.00 V DC). Explicit verification is mandatory.
 
 .DEFAULT_GOAL := hold
-.PHONY: hold verify sim_400c sim_205b sim_omega64 qnx_omega64 sim_vektor_a qnx_vektor_a sim_k_sluice
+.PHONY: hold verify sim_400c sim_205b sim_omega64 qnx_omega64 sim_vektor_a qnx_vektor_a sim_k_sluice sim_bell_ky sim_omni_crash3
 
 hold:
 	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains and all 10 Demonstrator Suites (60/60 PASS)."
@@ -58,6 +58,22 @@ sim_k_sluice:
 	@vvp /tmp/ky_rox_tb_k_sluice.vvp
 	@rm -f /tmp/ky_rox_tb_k_sluice.vvp
 
+sim_bell_ky:
+	@gcc -std=c11 -O2 -mgeneral-regs-only -Wall -Wextra -Werror -pedantic -Wconversion -Wsign-conversion -o /tmp/ky_rox_test_bell_ky L2_GATE/test_bell_ky_sluice_c11.c
+	@/tmp/ky_rox_test_bell_ky
+	@rm -f /tmp/ky_rox_test_bell_ky
+	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_bell_ky.vvp L2_GATE/bell_ky_sluice.sv L2_GATE/tb_bell_ky_sluice.sv
+	@vvp /tmp/ky_rox_tb_bell_ky.vvp
+	@rm -f /tmp/ky_rox_tb_bell_ky.vvp
+
+sim_omni_crash3:
+	@gcc -std=c11 -O2 -mgeneral-regs-only -Wall -Wextra -Werror -pedantic -Wconversion -Wsign-conversion -o /tmp/ky_rox_test_omni_crash3 L2_GATE/test_omni_crash3_c11.c
+	@/tmp/ky_rox_test_omni_crash3
+	@rm -f /tmp/ky_rox_test_omni_crash3
+	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_omni_crash3.vvp L2_GATE/omni_crash3_sluice.sv L2_GATE/tb_omni_crash3_sluice.sv
+	@vvp /tmp/ky_rox_tb_omni_crash3.vvp
+	@rm -f /tmp/ky_rox_tb_omni_crash3.vvp
+
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py
 	@PYTHONPATH=L1_LAW python3 -m unittest -q L1_LAW/test_ky_parser.py
@@ -68,6 +84,8 @@ verify:
 	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_registry_b_dlatch_telemetry_protocol.py
 	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_spec414_415_416_gothenburg_corridor_gate.py
 	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_k_filter_sluice_dual_track.py
+	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_bell_ky_7qubit_cptp.py
+	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_omni_crash3_linf.py
 	@PYTHONPATH=tools python3 -m unittest -q tools/test_contract_blast_radius_scanner.py
 	@PYTHONPATH=tools python3 -m unittest -q tools/test_agy_ky_blackbox_harness.py
 	@PYTHONPATH=tools python3 -m unittest -q tools/test_export_blast_sphere.py
