@@ -26,6 +26,8 @@ L2_GATE/evaluate_boundaries.py
 L2_GATE/fpga_capsule_frame_205b_decoder.sv
 L2_GATE/fpga_witness_ledger_engine.py
 L2_GATE/gothenburg_corridor_rosetta_top.sv
+L2_GATE/k_filter_sluice.h
+L2_GATE/k_filter_sluice.sv
 L2_GATE/kpod_fpga_guillotine_12u5.sv
 L2_GATE/omega_hal_pack.c
 L2_GATE/omega_qnx_resmgr.c
@@ -37,12 +39,15 @@ L2_GATE/spec411_gate.h
 L2_GATE/spec414_415_416_gothenburg_corridor_gate.py
 L2_GATE/spec415_kpod_cdc_gate.sv
 L2_GATE/spec416_infranett_witness_gate.sv
+L2_GATE/tb_k_filter_sluice.sv
 L2_GATE/tb_kpod_guillotine_and_205b_decoder.sv
 L2_GATE/tb_omega_symplectic_watchdog_64b.sv
 L2_GATE/tb_temporal_bifurcation_400c.sv
 L2_GATE/tb_vektor_a_spec411_sluice.sv
 L2_GATE/temporal_bifurcation_400c.sv
 L2_GATE/test_adversarial_capsule_gate_harness.py
+L2_GATE/test_k_filter_sluice_c11.c
+L2_GATE/test_k_filter_sluice_dual_track.py
 L2_GATE/test_omega_hal_pack_c11.c
 L2_GATE/test_registry_b_dlatch_telemetry_protocol.py
 L2_GATE/test_spec414_415_416_gothenburg_corridor_gate.py

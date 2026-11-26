@@ -34,6 +34,7 @@ python3 run_demo.py
 # Optional C11, QNX 8.0, and SystemVerilog RTL verification:
 make sim_vektor_a # 133,425 ps (20.0 m) Vektor A light-cone airlock + SPEC-411 galvanic sluice (C11 + iverilog)
 make qnx_vektor_a # Dual-arch QNX 8.0 Vektor A + SPEC-411 safety cage (qcc x86_64 + aarch64le, 0 float)
+make sim_k_sluice # 128-bit K-Filter single-arm sluice (C11 + iCE40UP5K RTL, 12/12 XOR == 0, 14.87 MHz post-PnR)
 make sim_205b     # 205-byte capsule frame decoder & 12.5 us guillotine testbench (iverilog)
 make sim_400c     # 400-cycle temporal bifurcation gate testbench (iverilog)
 make sim_omega64  # Zero-float C11 64-byte SPI HAL pack + SystemVerilog symplectic watchdog
@@ -59,6 +60,7 @@ For local-first critical infrastructure interlocks (`Infranett` / `KY-ROX`), [`L
 
 - **Vektor A (`133,425 ps` Alexandrov Diamond):** Binds local actuation wake (`core_wake_en`) to round-trip speed-of-light Time-of-Flight over $R_{\max} = 20.0\text{ m}$ ($\tau_{\max} = \lfloor 40.0\text{ m} / c \rfloor = 133{,}425\text{ ps}$ at $c = 299{,}792{,}458\text{ m/s}$, rejecting $+1\text{ ps}$ at $133{,}426\text{ ps}$ and $500\text{ m}$ relays at $3{,}335{,}640\text{ ps}$ into `CAUSAL_HOLD` at `0.00 V DC`), locked to a $\pm 5.0\text{ ppm}$ crystal window ($200{,}000 \pm 1\text{ tick}$) and a one-way optical telemetry diode (`optical_tx_only`).
 - **`SPEC-411` Dual-Rail Galvanic Separation ($\partial \Omega_Y / \partial \Omega_T \equiv 0$):** Hardwires the unconditional Fail-Open existence rail ($\Omega_Y = 5.00\text{ V}$, `0x01`) independently of the Fail-Closed actuation rail ($\Omega_T \in \{0.00\text{ V}, 5.00\text{ V}\}$, `0x02`), with exact integer cross-multiplied divergence gating ($\Delta_K < \varepsilon$), Butterfly Pocket $A_5$ stasis (`0x08`), and non-erasing Level 01 reset recovery (`make sim_vektor_a`: `10/10` C11 + `17/17` RTL vectors, `XOR == 0`).
+- **Dual-Track `K`-Filter Sluice (`SPEC-515 v1.1`):** Pairs exact rational Pythagorean $(3, 4, 5) \to (7, 24, 25)$ 2-qubit non-Markovian environment re-coupling ($\Delta p = 576/625$ vs. Markovian $\Delta p = 0$, [`test_k_filter_sluice_dual_track.py`](L2_GATE/test_k_filter_sluice_dual_track.py)) with [`k_filter_sluice.h`](L2_GATE/k_filter_sluice.h) and [`k_filter_sluice.sv`](L2_GATE/k_filter_sluice.sv) (`make sim_k_sluice`: `12/12` C11 $\leftrightarrow$ RTL vectors, `2,595 / 5,280 ICESTORM_LC` = `49%`, `0 DSP`, `67.25 ns` = `14.87 MHz` post-PnR `icetime` STA on `UPduino v3.1`).
 
 ---
 
