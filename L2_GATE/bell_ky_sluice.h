@@ -232,7 +232,7 @@ static inline void bky_sluice_load_setting(
         return;
     }
 
-    if (((r->loaded_mask & bit) != 0U) || (np != r->n_pulses_latched) || (!ok_arm)) {
+    if ((r->loaded_mask != (uint8_t)(bit - 1U)) || (np != r->n_pulses_latched) || (!ok_arm)) {
         r->shot_err_accum = true;
     }
     r->loaded_mask = (uint8_t)(r->loaded_mask | bit);

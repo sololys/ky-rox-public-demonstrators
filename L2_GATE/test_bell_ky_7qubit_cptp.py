@@ -323,7 +323,7 @@ class TestBellKY7QubitCPTPSluice(unittest.TestCase):
             for forbidden in ("%xmm", "%ymm", "%st(", "cvtsi2sd", "cvtsi2ss", "mulsd", "addsd"):
                 self.assertNotIn(forbidden, disasm)
             c_out = subprocess.check_output([str(c_bin)], text=True).strip().splitlines()
-            self.assertEqual(len(c_out), 12)
+            self.assertEqual(len(c_out), 20)
 
             if shutil.which("iverilog") and shutil.which("vvp"):
                 rtl_vvp = tdir / "bell_ky_rtl.vvp"
@@ -357,6 +357,30 @@ class TestBellKY7QubitCPTPSluice(unittest.TestCase):
                     )
                     ps_out = [ln for ln in subprocess.check_output(["vvp", str(ps_vvp)], text=True).splitlines() if ln.startswith("V")]
                     self.assertEqual(c_out, ps_out)
+
+    def test_06_cptp_boundary_extremes_and_1lsb_drift_rejection(self) -> None:
+        ops = pauli_2q()
+        proj_0 = q_zeros(32, 32)
+        proj_0[0][0] = Fraction(1, 1)
+        rho0 = q_kron(singlet_rho_ab(), proj_0)
+        zi_128 = q_kron(ops["ZI"], q_eye(32))
+        rho_pz1 = q_matmul(zi_128, q_matmul(rho0, zi_128))
+        self.assertEqual(q_trace(rho_pz1), Fraction(1, 1))
+        rho_ab_pz1 = partial_trace_aux_128_to_4(rho_pz1)
+        exp_zz = q_trace_prod(rho_ab_pz1, ops["ZZ"])
+        exp_xx = q_trace_prod(rho_ab_pz1, ops["XX"])
+        self.assertEqual(exp_zz + exp_xx, Fraction(0, 1))
+        self.assertEqual(Fraction(4, 1) * (exp_zz * exp_zz + exp_xx * exp_xx), Fraction(8, 1))
+
+        eps = Fraction(1, 1 << 40)
+        rho_bad_cp = q_add_scaled(q_add_scaled(rho_pz1, rho0, -eps), rho_pz1, eps)
+        self.assertEqual(q_trace(rho_bad_cp), Fraction(1, 1))
+        singlet_fid = q_trace_prod(partial_trace_aux_128_to_4(rho_bad_cp), singlet_rho_ab())
+        self.assertEqual(singlet_fid, -eps)
+        self.assertLess(singlet_fid, Fraction(0, 1))
+
+        i128 = q_eye(128)
+        self.assertGreater(frobenius_diff_sq(q_add_scaled(i128, i128, eps), i128), Fraction(0, 1))
 
 
 if __name__ == "__main__":

@@ -135,5 +135,78 @@ int main(void) {
     omni_crash3_eval(&r, &in);
     print_vec("V12", &r);
 
+    /* V13: L01 Reset + Simultaneous Upper Knife-Edge Across Every Channel -> OPEN (OR-fuse -> 0xFFFF) */
+    omni_crash3_l01_reset(&r, true);
+    in = nominal_in(r.expected_epoch);
+    in.q_pos       = -1000;   /* exact -q_bound -> eps_k == 0 */
+    in.lambda_spec = 0;       /* exact spectral boundary */
+    in.g_barrier   = -200;    /* -g == g_dot * tau_hold == 200 */
+    in.pi_risk     = 199U;    /* tau_risk - 1 */
+    in.r_dot       = 500U;    /* == delta_r */
+    in.dist_mm     = 19999U;  /* max integer mm causal within 133,425 ps */
+    in.tof_ps      = 133425U;
+    in.s_phase_16  = 0xFA5AU;
+    in.r_mask_16   = 0xF00FU;
+    in.m_rx_16     = 0x0A55U; /* 0xF5AA | 0x0A55 == 0xFFFF */
+    omni_crash3_eval(&r, &in);
+    print_vec("V13", &r);
+
+    /* V14: Negative-Side L_inf Exact Ceiling (q_pos=-1250 -> eps_k=250==eps_k_max, pi=0, r_dot=0) -> HOLD */
+    in = nominal_in(r.expected_epoch);
+    in.q_pos   = -1250;
+    in.pi_risk = 0U;
+    in.r_dot   = 0U;
+    omni_crash3_eval(&r, &in);
+    print_vec("V14", &r);
+
+    /* V15: Z[phi] Opposite-Sign Split (q=0, p=0, k=0, B_A=500, C=100 -> 2*H_phi = -800 + 1000*phi > 0) -> OPEN */
+    in = nominal_in(r.expected_epoch);
+    in.q_pos     = 0;
+    in.p_mom     = 0;
+    in.k_defect  = 0U;
+    in.b_barrier = 500U;
+    in.c_care    = 100U;
+    omni_crash3_eval(&r, &in);
+    print_vec("V15", &r);
+
+    /* V16: Single-Axis L_inf +1 LSB Top (pi_risk=200==tau_risk, eps_k=0, r_dot=0) -> HOLD (LINF=1) */
+    in = nominal_in(r.expected_epoch);
+    in.pi_risk = 200U;
+    in.r_dot   = 0U;
+    omni_crash3_eval(&r, &in);
+    print_vec("V16", &r);
+
+    /* V17: Negative-Side 1-LSB Over-Ceiling (q_pos=-1251 -> eps_k=251 > 250) -> KILL (O_1, REASON=13) */
+    in = nominal_in(r.expected_epoch);
+    in.q_pos = -1251;
+    omni_crash3_eval(&r, &in);
+    print_vec("V17", &r);
+
+    /* V18: L01 Reset + Sub-Millimeter SI Light-Cone Edge (dist_mm=20000, tof_ps=133425 -> 4e13 > c*tof) -> KILL */
+    omni_crash3_l01_reset(&r, true);
+    in = nominal_in(r.expected_epoch);
+    in.dist_mm = 20000U;
+    in.tof_ps  = 133425U;
+    omni_crash3_eval(&r, &in);
+    print_vec("V18", &r);
+
+    /* V19: L01 Reset + 63-Bit Max Non-Overflowing Z[phi] Corner (0x7FFFFFFF across q, -p, k, C) -> OPEN */
+    omni_crash3_l01_reset(&r, true);
+    in = nominal_in(r.expected_epoch);
+    in.q_bound   = 0x7FFFFFFFU;
+    in.q_pos     = 0x7FFFFFFF;
+    in.p_mom     = -0x7FFFFFFF;
+    in.k_defect  = 0x7FFFFFFFU;
+    in.b_barrier = 0U;
+    in.c_care    = 0x7FFFFFFFU;
+    omni_crash3_eval(&r, &in);
+    print_vec("V19", &r);
+
+    /* V20: Z[phi] Over-Domain MSB Poison (k_defect = 0x80000000U) -> KILL (O_1, REASON=07) */
+    in = nominal_in(r.expected_epoch);
+    in.k_defect = 0x80000000U;
+    omni_crash3_eval(&r, &in);
+    print_vec("V20", &r);
+
     return 0;
 }

@@ -181,41 +181,21 @@ module bell_ky_sluice (
 
     wire [95:0] next_acc = mul_acc + (mul_op[0] ? mul_sh : 96'd0);
 
-    // Single shared 94-bit borrow-subtractor
+    // Pre-registered 3-bit comparator mode + single shared 94-bit borrow-subtractor
+    reg [2:0]  cmp_mode;
     reg [93:0] cmp_a;
     reg [93:0] cmp_b;
     always @(*) begin
-        cmp_a = 94'd0;
-        cmp_b = 94'd0;
-        if (mac_phase == 3'd2) begin
-            if (bit_cnt == 6'd0) begin
-                cmp_a = {10'd0, s1_sq_r};
-                cmp_b = {10'd0, s2_sq_r};
-            end else if (bit_cnt == 6'd1) begin
-                cmp_a = {10'd0, s2_sq_r};
-                cmp_b = {10'd0, s1_sq_r};
-            end else if (bit_cnt == 6'd2) begin
-                cmp_a = {10'd0, scratch_93[83:0]};
-                cmp_b = {8'd0, lat_tau_lo86};
-            end else begin
-                cmp_a = {8'd0, next_acc[85:0]};
-                cmp_b = {8'd0, lat_tau_lo86};
-            end
-        end else if (mac_phase == 3'd4) begin
-            if (bit_cnt == 6'd0) begin
-                cmp_a = {10'd0, s1_sq_r};
-                cmp_b = {12'd0, scratch_93[79:0], 2'b00};
-            end else if (bit_cnt == 6'd1) begin
-                cmp_a = {10'd0, s1_sq_r};
-                cmp_b = {11'd0, scratch_93[79:0], 3'b000};
-            end else begin
-                cmp_a = {10'd0, s2_sq_r};
-                cmp_b = {11'd0, scratch_93[79:0], 3'b000};
-            end
-        end else begin
-            cmp_a = {31'd0, next_acc[62:0]};
-            cmp_b = {1'b0, scratch_93};
-        end
+        case (cmp_mode)
+            3'd0: begin cmp_a = {10'd0, s1_sq_r};           cmp_b = {10'd0, s2_sq_r};                 end
+            3'd1: begin cmp_a = {10'd0, s2_sq_r};           cmp_b = {10'd0, s1_sq_r};                 end
+            3'd2: begin cmp_a = {10'd0, scratch_93[83:0]};  cmp_b = {8'd0, lat_tau_lo86};             end
+            3'd3: begin cmp_a = {8'd0, mul_acc[85:0]};      cmp_b = {8'd0, lat_tau_lo86};             end
+            3'd4: begin cmp_a = {10'd0, s1_sq_r};           cmp_b = {12'd0, scratch_93[79:0], 2'b00}; end
+            3'd5: begin cmp_a = {10'd0, s1_sq_r};           cmp_b = {11'd0, scratch_93[79:0], 3'b000};end
+            3'd6: begin cmp_a = {10'd0, s2_sq_r};           cmp_b = {11'd0, scratch_93[79:0], 3'b000};end
+            default: begin cmp_a = {31'd0, mul_acc[62:0]};  cmp_b = {1'b0, scratch_93};               end
+        endcase
     end
 
     wire [94:0] diff_ba = {1'b0, cmp_b} - {1'b0, cmp_a};
@@ -229,7 +209,7 @@ module bell_ky_sluice (
             3'd1: begin next_mul_op = {5'd0, lat_abs_ds}; next_mul_sh61 = {18'd0, lat_abs_ds}; end
             3'd2: begin next_mul_op = {8'd0, lat_np};     next_mul_sh61 = {21'd0, lat_np};     end
             3'd3: begin next_mul_op = {16'd0, lat_dk};    next_mul_sh61 = {32'd0, SI_C_29};    end
-            3'd4: begin next_mul_op = {16'd0, lat_tclk};  next_mul_sh61 = next_acc[60:0];      end
+            3'd4: begin next_mul_op = {16'd0, lat_tclk};  next_mul_sh61 = mul_acc[60:0];       end
             default: begin next_mul_op = {16'd0, lat_dist}; next_mul_sh61 = {30'd0, TWO_E9_31}; end
         endcase
     end
@@ -294,10 +274,10 @@ module bell_ky_sluice (
                 cycle_out <= cycle_out + 64'd1;
                 if (mac_phase < 3'd7) begin
                     if ((bit_cnt == 6'd47) && (mac_phase == 3'd0) && (!kill_latched_out)) begin
-                        s1_sq_r <= next_acc[83:0];
+                        s1_sq_r <= mul_acc[83:0];
                     end
                     if ((bit_cnt == 6'd47) && (mac_phase == 3'd1) && (!kill_latched_out)) begin
-                        s2_sq_r <= next_acc[83:0];
+                        s2_sq_r <= mul_acc[83:0];
                     end
                 end else begin
                     busy_out             <= 1'b0;
@@ -344,7 +324,7 @@ module bell_ky_sluice (
                     shot_err_accum <= (!ok_arm);
                 end else begin
                     loaded_mask <= loaded_mask | slot_bit;
-                    if (((loaded_mask & slot_bit) != 8'd0) ||
+                    if ((loaded_mask != (slot_bit - 8'd1)) ||
                         (n_pulses_in != n_pulses_latched) || (!ok_arm)) begin
                         shot_err_accum <= 1'b1;
                     end
@@ -373,20 +353,26 @@ module bell_ky_sluice (
             if (mac_phase < 3'd7) begin
                 if (mac_phase == 3'd2) begin
                     if (bit_cnt == 6'd0) begin
-                        s1_gt_s2 <= a_gt_b;
-                        if (!a_gt_b) scratch_93 <= {9'd0, diff_ba[83:0]};
+                        s1_gt_s2   <= a_gt_b;
+                        scratch_93 <= {9'd0, diff_ba[83:0]};
+                        cmp_mode   <= 3'd1;
                     end else if (bit_cnt == 6'd1) begin
                         if (s1_gt_s2) scratch_93 <= {9'd0, diff_ba[83:0]};
+                        cmp_mode <= 3'd2;
                     end else if (bit_cnt == 6'd2) begin
                         flag_sig_shift <= (!lat_tau_hi_nz) && a_gt_b;
+                        cmp_mode       <= 3'd3;
                     end
                 end else if (mac_phase == 3'd4) begin
                     if (bit_cnt == 6'd0) begin
                         flag_bell_viol <= a_gt_b;
+                        cmp_mode       <= 3'd5;
                     end else if (bit_cnt == 6'd1) begin
                         flag_super_ts <= a_gt_b;
+                        cmp_mode      <= 3'd6;
                     end else if (bit_cnt == 6'd2) begin
                         if (a_gt_b) flag_super_ts <= 1'b1;
+                        cmp_mode <= 3'd7;
                     end
                 end
 
@@ -401,12 +387,15 @@ module bell_ky_sluice (
                     mul_acc   <= 96'd0;
                     mul_op    <= next_mul_op;
                     mul_sh    <= {35'd0, next_mul_sh61};
-                    if (mac_phase == 3'd2) begin
+                    if (mac_phase == 3'd1) begin
+                        cmp_mode <= 3'd0;
+                    end else if (mac_phase == 3'd2) begin
                         if ((!lat_tau_hi_nz) && a_gt_b) flag_sig_shift <= 1'b1;
                     end else if (mac_phase == 3'd3) begin
-                        scratch_93 <= {13'd0, next_acc[79:0]};
+                        scratch_93 <= {13'd0, mul_acc[79:0]};
+                        cmp_mode   <= 3'd4;
                     end else if (mac_phase == 3'd5) begin
-                        scratch_93 <= next_acc[92:0];
+                        scratch_93 <= mul_acc[92:0];
                     end else if (mac_phase == 3'd6) begin
                         flag_lc_bad <= lat_lc_zero || (!a_gt_b);
                     end
@@ -436,6 +425,7 @@ module bell_ky_sluice (
             end
         end else if ((!l01_reset_strobe) && (!load_en) && eval_en) begin
             mac_phase      <= 3'd0;
+            cmp_mode       <= 3'd0;
             bit_cnt        <= 6'd0;
             mul_op         <= {6'd0, abs_s1_now};
             mul_sh         <= {54'd0, abs_s1_now};

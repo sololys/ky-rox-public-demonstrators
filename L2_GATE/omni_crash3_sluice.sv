@@ -2,7 +2,7 @@
 // L2_GATE — 25.OMNI Three-Way Crash Sluice (Crash_3, SystemVerilog RTL)
 // Module   : omni_crash3_sluice
 // Architecture : Constant-time 194-cycle shared 64-bit MAC & Z[phi] Hamiltonian
-//                consequence sluice (0 SB_MAC16, 0 FP, fits <50% iCE40UP5K).
+//                consequence sluice (0 SB_MAC16, 0 FP, stationary MSB=0 MAC).
 // Parity       : 100% cycle- and bit-exact with omni_crash3_sluice.h (C11).
 // =============================================================================
 `timescale 1ns / 1ps
@@ -103,37 +103,35 @@ module omni_crash3_sluice (
 
     reg has_survived_step;
 
-    // Input-stage combinational checks on eval_en
     wire poison_or_bar = (q_pos == $signed(POISON_MIN)) ||
                          (p_mom == $signed(POISON_MIN)) ||
                          (g_barrier == $signed(POISON_MIN)) ||
                          (g_dot == $signed(POISON_MIN)) ||
                          (q_bound == 32'd0) || q_bound[31] ||
+                         k_defect[31] || b_barrier[31] || c_care[31] ||
                          (tau_risk == 32'd0) || (!u_safe_nonempty) ||
                          (g_barrier >= 32'sd0) || (lambda_spec > 32'sd0);
 
-    wire inv_bad    = ((m_rx_16 ^ r_mask_16) != s_phase_16);
-    wire qr_bad     = (finder_sig_40 != FINDER_K_GAMMA) || (quiet_zone < 8'd4);
-    wire replay_bad = (seq_epoch < expected_epoch_out);
+    wire inv_bad       = ((m_rx_16 ^ r_mask_16) != s_phase_16);
+    wire qr_bad        = (finder_sig_40 != FINDER_K_GAMMA) || (quiet_zone < 8'd4);
+    wire replay_bad    = (seq_epoch < expected_epoch_out);
     wire lc_bounds_bad = (dist_mm == 32'd0) || (dist_mm > MAX_DIST_MM) ||
                          (tof_ps == 32'd0)  || (tof_ps > MAX_TOF_PS);
 
-    wire signed [31:0] qb_s    = $signed(q_bound);
-    wire signed [31:0] q_proj  = (q_pos > qb_s) ? qb_s : ((q_pos < -qb_s) ? (-qb_s) : q_pos);
-    wire signed [32:0] q_diff  = $signed({q_pos[31], q_pos}) - $signed({q_proj[31], q_proj});
-    wire [31:0] eps_k_now      = q_diff[32] ? (-q_diff[31:0]) : q_diff[31:0];
+    wire [31:0] abs_qpos_now = q_pos[31] ? (-q_pos) : q_pos;
+    wire [30:0] abs_qp31_now = (abs_qpos_now[30:0] > q_bound[30:0]) ? q_bound[30:0] : abs_qpos_now[30:0];
+    wire [31:0] abs_pm_now   = p_mom[31] ? (-p_mom) : p_mom;
+    wire [31:0] g_marg_now   = g_barrier[31] ? (-g_barrier) : 32'd0;
+    wire [30:0] g_dot_pos    = (g_dot > 32'sd0) ? g_dot[30:0] : 31'd0;
 
-    wire [31:0] abs_qp_now = q_proj[31] ? (-q_proj) : q_proj;
-    wire [31:0] abs_pm_now = p_mom[31]  ? (-p_mom)  : p_mom;
-    wire [31:0] g_marg_now = g_barrier[31] ? (-g_barrier) : 32'd0;
-    wire [31:0] g_dot_pos  = (g_dot > 32'sd0) ? g_dot : 32'd0;
+    wire signed [32:0] two_c_minus_b = $signed({1'b0, c_care[30:0], 1'b0}) -
+                                       $signed({1'b0, b_barrier[30:0], 1'b0});
 
     wire [31:0] pi_exc_now   = (pi_risk >= tau_risk) ? (pi_risk - tau_risk + 32'd1) : 32'd0;
     wire [31:0] rdot_exc_now = (r_dot > delta_r) ? (r_dot - delta_r) : 32'd0;
-    wire [31:0] max_pr_now   = (pi_exc_now >= rdot_exc_now) ? pi_exc_now : rdot_exc_now;
-    wire [31:0] linf_now     = (eps_k_now >= max_pr_now) ? eps_k_now : max_pr_now;
 
-    // Synchronous scratchpad registers for 6x32 serial MAC
+    // Stationary MSB=0 6x32 serial MAC: mul_op[31] == 0 in all 6 phases, so
+    // mul_acc is already final at bit_cnt == 31 with zero series post-adders!
     reg [2:0]  mac_phase;
     reg [4:0]  bit_cnt;
     reg [31:0] mul_op;
@@ -153,15 +151,21 @@ module omni_crash3_sluice (
     reg        lat_nowit_hold;
     reg        lat_gdot_pos;
     reg [15:0] lat_m_rx_16;
-    reg [31:0] lat_abs_pm;
-    reg [31:0] lat_k_defect;
-    reg [31:0] lat_b_barrier;
-    reg [31:0] lat_c_care;
+    reg [30:0] lat_abs_pm31;
+    reg [30:0] lat_k_defect31;
+    reg [30:0] lat_b_barrier31;
     reg [31:0] lat_dist_mm;
     reg [31:0] lat_tof_ps;
-    reg [31:0] lat_g_dot_pos;
+    reg [30:0] lat_g_dot_pos31;
     reg [31:0] lat_tau_hold;
     reg [31:0] lat_g_margin;
+    reg [30:0] lat_abs_qpos31;
+    reg [30:0] lat_q_bound31;
+    reg [31:0] lat_eps_k_max;
+    reg [31:0] lat_eps_k;
+    reg [31:0] lat_pi_exc;
+    reg [31:0] lat_rdot_exc;
+    reg [31:0] lat_max_pr;
     reg [31:0] lat_linf;
 
     reg signed [63:0] tmp_h_a;
@@ -173,14 +177,35 @@ module omni_crash3_sluice (
     wire [63:0] next_acc = mul_acc + (mul_op[0] ? mul_sh : 64'd0);
 
     reg [31:0] next_mul_op;
-    reg [31:0] next_mul_sh32;
+    reg [32:0] next_mul_sh33;
+    reg [63:0] next_mul_acc_init;
     always @(*) begin
         case (mac_phase)
-            3'd0: begin next_mul_op = lat_abs_pm;    next_mul_sh32 = lat_abs_pm;    end
-            3'd1: begin next_mul_op = lat_k_defect;  next_mul_sh32 = lat_k_defect;  end
-            3'd2: begin next_mul_op = lat_dist_mm;   next_mul_sh32 = TWO_E9_PS_MM;  end
-            3'd3: begin next_mul_op = lat_tof_ps;    next_mul_sh32 = SI_C_M_PER_S;  end
-            default: begin next_mul_op = lat_tau_hold; next_mul_sh32 = lat_g_dot_pos; end
+            3'd0: begin
+                next_mul_op       = {1'b0, lat_abs_pm31};
+                next_mul_sh33     = {2'b00, lat_abs_pm31};
+                next_mul_acc_init = mul_acc; // Continues accumulating q_sq + (2c - 2b) + p_sq!
+            end
+            3'd1: begin
+                next_mul_op       = {1'b0, lat_k_defect31};
+                next_mul_sh33     = {1'b0, lat_k_defect31, 1'b0}; // 2 * k_defect
+                next_mul_acc_init = {32'd0, lat_b_barrier31, 1'b0}; // 2 * b_barrier
+            end
+            3'd2: begin
+                next_mul_op       = TWO_E9_PS_MM; // 0x7735_9400 (bit 31 == 0)
+                next_mul_sh33     = {1'b0, lat_dist_mm};
+                next_mul_acc_init = 64'd0;
+            end
+            3'd3: begin
+                next_mul_op       = SI_C_M_PER_S; // 0x11DE_784A (bits 31:29 == 0)
+                next_mul_sh33     = {1'b0, lat_tof_ps};
+                next_mul_acc_init = 64'd0;
+            end
+            default: begin
+                next_mul_op       = {1'b0, lat_g_dot_pos31}; // bit 31 == 0
+                next_mul_sh33     = {1'b0, lat_tau_hold};
+                next_mul_acc_init = 64'd0;
+            end
         endcase
     end
 
@@ -308,6 +333,16 @@ module omni_crash3_sluice (
 
     always @(posedge clk) begin
         if (busy_out) begin
+            if (mac_phase == 3'd0) begin
+                if (bit_cnt == 5'd0) begin
+                    lat_eps_k  <= (lat_abs_qpos31 > lat_q_bound31) ? {1'b0, (lat_abs_qpos31 - lat_q_bound31)} : 32'd0;
+                    lat_max_pr <= (lat_pi_exc >= lat_rdot_exc) ? lat_pi_exc : lat_rdot_exc;
+                end else if (bit_cnt == 5'd1) begin
+                    lat_eps_kill <= (lat_eps_k > lat_eps_k_max);
+                    lat_eps_hold <= (lat_eps_k != 32'd0);
+                    lat_linf     <= (lat_eps_k >= lat_max_pr) ? lat_eps_k : lat_max_pr;
+                end
+            end
             if (mac_phase < 3'd6) begin
                 if (bit_cnt < 5'd31) begin
                     bit_cnt <= bit_cnt + 5'd1;
@@ -317,27 +352,25 @@ module omni_crash3_sluice (
                 end else begin
                     bit_cnt   <= 5'd0;
                     mac_phase <= mac_phase + 3'd1;
-                    mul_acc   <= 64'd0;
+                    mul_acc   <= next_mul_acc_init;
                     mul_op    <= next_mul_op;
-                    mul_sh    <= {32'd0, next_mul_sh32};
+                    mul_sh    <= {31'd0, next_mul_sh33};
                     case (mac_phase)
-                        3'd0: tmp_h_a <= $signed(next_acc);
-                        3'd1: tmp_h_a <= tmp_h_a + $signed(next_acc)
-                                         - $signed({31'd0, lat_b_barrier, 1'b0})
-                                         + $signed({31'd0, lat_c_care, 1'b0});
-                        3'd2: tmp_h_b <= (next_acc << 1) + {31'd0, lat_b_barrier, 1'b0};
-                        3'd3: tmp_lc_lhs <= next_acc;
-                        3'd4: flag_lc_ds2_bad <= (tmp_lc_lhs > next_acc);
-                        default: flag_tau_r_short <= lat_gdot_pos && ({32'd0, lat_g_margin} < next_acc);
+                        3'd1: tmp_h_a          <= $signed(mul_acc);
+                        3'd2: tmp_h_b          <= mul_acc;
+                        3'd3: tmp_lc_lhs       <= mul_acc;
+                        3'd4: flag_lc_ds2_bad  <= (tmp_lc_lhs > mul_acc);
+                        3'd5: flag_tau_r_short <= lat_gdot_pos && ({32'd0, lat_g_margin} < mul_acc);
+                        default: ;
                     endcase
                 end
             end
         end else if ((!l01_reset_strobe) && eval_en) begin
             mac_phase         <= 3'd0;
             bit_cnt           <= 5'd0;
-            mul_op            <= abs_qp_now;
-            mul_sh            <= {32'd0, abs_qp_now};
-            mul_acc           <= 64'd0;
+            mul_op            <= {1'b0, abs_qp31_now};
+            mul_sh            <= {33'd0, abs_qp31_now};
+            mul_acc           <= {{31{two_c_minus_b[32]}}, two_c_minus_b};
             flag_lc_ds2_bad   <= 1'b0;
             flag_tau_r_short  <= 1'b0;
 
@@ -347,23 +380,25 @@ module omni_crash3_sluice (
             lat_qr_bad        <= qr_bad;
             lat_replay_bad    <= replay_bad;
             lat_lc_bounds_bad <= lc_bounds_bad;
-            lat_eps_kill      <= (eps_k_now > eps_k_max);
+            lat_abs_qpos31    <= abs_qpos_now[30:0];
+            lat_q_bound31     <= q_bound[30:0];
+            lat_eps_k_max     <= eps_k_max;
+            lat_pi_exc        <= pi_exc_now;
+            lat_rdot_exc      <= rdot_exc_now;
             lat_pi_hold       <= (pi_risk >= tau_risk);
             lat_rdot_hold     <= (r_dot > delta_r);
-            lat_eps_hold      <= (eps_k_now != 32'd0);
-            lat_nowit_hold    <= (!eta_hw_truth) || (!witness_ext) || (seq_epoch != expected_epoch_out);
+            lat_nowit_hold    <= (!eta_hw_truth) || (!witness_ext) ||
+                                 (seq_epoch != expected_epoch_out) || (seq_epoch == 32'hFFFF_FFFF);
             lat_gdot_pos      <= (g_dot > 32'sd0);
             lat_m_rx_16       <= m_rx_16;
-            lat_abs_pm        <= abs_pm_now;
-            lat_k_defect      <= k_defect;
-            lat_b_barrier     <= b_barrier;
-            lat_c_care        <= c_care;
+            lat_abs_pm31      <= abs_pm_now[30:0];
+            lat_k_defect31    <= k_defect[30:0];
+            lat_b_barrier31   <= b_barrier[30:0];
             lat_dist_mm       <= dist_mm;
             lat_tof_ps        <= tof_ps;
-            lat_g_dot_pos     <= g_dot_pos;
+            lat_g_dot_pos31   <= g_dot_pos;
             lat_tau_hold      <= tau_hold_ticks;
             lat_g_margin      <= g_marg_now;
-            lat_linf          <= linf_now;
         end
     end
 

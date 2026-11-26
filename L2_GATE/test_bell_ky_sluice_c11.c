@@ -199,5 +199,122 @@ int main(void) {
     bky_sluice_eval(&r, &in);
     print_vec("V12", &r);
 
+    /* V13: Exact Classical Bell Boundary (Sigma_1 = 20000 -> S1^2 == 4*N^2) -> bell_violated_k1=0, OPEN */
+    stream_symmetric_chsh_block(&r, 10000ULL,
+        5000LL, 5000LL, 5000LL, -5000LL,
+        4000LL, 4000LL, 4000LL, -4000LL);
+    in = nominal_eval_cfg(10000ULL);
+    bky_sluice_eval(&r, &in);
+    print_vec("V13", &r);
+
+    /* V14: Minimum Physical +1-Shot Quantum Above Bell Boundary (Sigma_1 = 20002 -> S1^2 = 400080004 > 4*N^2) */
+    {
+        bky_arm_counts_t ac0 = {10000ULL, 3751ULL, 1250ULL, 1249ULL, 3750ULL};
+        bky_sluice_load_setting(&r, 0U, 0U, &ac0);
+        for (uint8_t idx = 1U; idx < 4U; ++idx) {
+            bky_arm_counts_t ac;
+            fill_sym_counts(10000ULL, (idx == 3U) ? -5000LL : 5000LL, &ac);
+            bky_sluice_load_setting(&r, 0U, idx, &ac);
+        }
+        for (uint8_t idx = 0U; idx < 4U; ++idx) {
+            bky_arm_counts_t ac;
+            fill_sym_counts(10000ULL, (idx == 3U) ? -4000LL : 4000LL, &ac);
+            bky_sluice_load_setting(&r, 1U, idx, &ac);
+        }
+        in = nominal_eval_cfg(10000ULL);
+        bky_sluice_eval(&r, &in);
+        print_vec("V14", &r);
+    }
+
+    /* V15: 128-Bit Word-Seam Exact Equality (ds_sq == 2^68 == tau_diff_sq) -> PORT_HOLD */
+    {
+        uint64_t n32 = (1ULL << 32);
+        int64_t  c31 = (int64_t)(1ULL << 31);
+        stream_symmetric_chsh_block(&r, n32,
+            c31, c31, c31, -c31,
+            -c31, -c31, -c31, c31);
+        in = nominal_eval_cfg(n32);
+        in.tau_diff_sq.hi = 0x10ULL;
+        in.tau_diff_sq.lo = 0x0ULL;
+        bky_sluice_eval(&r, &in);
+        print_vec("V15", &r);
+    }
+
+    /* V16: 128-Bit Word-Seam -1 LSB Borrow (tau_diff_sq = 2^68 - 1 = 0x0F_FFFFFFFFFFFFFFFF) -> PORT_OPEN */
+    {
+        uint64_t n32 = (1ULL << 32);
+        int64_t  c31 = (int64_t)(1ULL << 31);
+        stream_symmetric_chsh_block(&r, n32,
+            c31, c31, c31, -c31,
+            -c31, -c31, -c31, c31);
+        in = nominal_eval_cfg(n32);
+        in.tau_diff_sq.hi = 0x0FULL;
+        in.tau_diff_sq.lo = 0xFFFFFFFFFFFFFFFFULL;
+        bky_sluice_eval(&r, &in);
+        print_vec("V16", &r);
+    }
+
+    /* V17: Absolute MAX_PULSES = 2^38 Saturated Ceiling (S1^2 = 2^80, ds_sq = 2^82) + +1mm Light-Cone Margin -> OPEN */
+    {
+        uint64_t nmax = (1ULL << 38);
+        int64_t  cmax = (int64_t)nmax;
+        stream_symmetric_chsh_block(&r, nmax,
+            cmax, cmax, cmax, -cmax,
+            -cmax, -cmax, -cmax, cmax);
+        in = nominal_eval_cfg(nmax);
+        in.delta_k_cycles = 1000U;
+        in.t_clk_ps       = 1000000U;
+        in.dist_mm        = 149896230U; /* 2e9 * 149896230 > 299792458 * 1e9 by +2e9 */
+        in.tau_diff_sq.hi = 0x0003FFFFULL;
+        in.tau_diff_sq.lo = 0xFFFFFFFFFFFFFFFFULL;
+        bky_sluice_eval(&r, &in);
+        print_vec("V17", &r);
+    }
+
+    /* V18: MAX_PULSES + 1 = (1ULL << 38) + 1 Over-Ceiling -> PORT_KILL */
+    {
+        uint64_t nover = (1ULL << 38) + 1ULL;
+        bky_arm_counts_t ac = {nover, nover, 0ULL, 0ULL, 0ULL};
+        for (uint8_t arm = 0U; arm < 2U; ++arm) {
+            for (uint8_t idx = 0U; idx < 4U; ++idx) {
+                bky_sluice_load_setting(&r, arm, idx, &ac);
+            }
+        }
+        in = nominal_eval_cfg(nover);
+        bky_sluice_eval(&r, &in);
+        print_vec("V18", &r);
+    }
+
+    /* V19: L01 Reset + Out-of-Order Interleaved Slot Attack (0 -> 4 -> 1..3 -> 5..7) -> PORT_KILL */
+    bky_sluice_l01_reset(&r, true);
+    {
+        bky_arm_counts_t ac_pos, ac_neg;
+        fill_sym_counts(10000ULL, 7000LL, &ac_pos);
+        fill_sym_counts(10000ULL, -7000LL, &ac_neg);
+        bky_sluice_load_setting(&r, 0U, 0U, &ac_pos);
+        bky_sluice_load_setting(&r, 1U, 0U, &ac_pos); /* Interleaved arm 1 before arm 0 finished! */
+        bky_sluice_load_setting(&r, 0U, 1U, &ac_pos);
+        bky_sluice_load_setting(&r, 0U, 2U, &ac_pos);
+        bky_sluice_load_setting(&r, 0U, 3U, &ac_neg);
+        bky_sluice_load_setting(&r, 1U, 1U, &ac_pos);
+        bky_sluice_load_setting(&r, 1U, 2U, &ac_pos);
+        bky_sluice_load_setting(&r, 1U, 3U, &ac_neg);
+        in = nominal_eval_cfg(10000ULL);
+        bky_sluice_eval(&r, &in);
+        print_vec("V19", &r);
+    }
+
+    /* V20: L01 Reset + Exact Lightlike Boundary (299792458 * 10^9 == 2e9 * 149896229, diff == 0) -> PORT_KILL */
+    bky_sluice_l01_reset(&r, true);
+    stream_symmetric_chsh_block(&r, 10000ULL,
+        7000LL, 7000LL, 7000LL, -7000LL,
+        6000LL, 6000LL, 6000LL, -6000LL);
+    in = nominal_eval_cfg(10000ULL);
+    in.delta_k_cycles = 1000U;
+    in.t_clk_ps       = 1000000U;
+    in.dist_mm        = 149896229U;
+    bky_sluice_eval(&r, &in);
+    print_vec("V20", &r);
+
     return 0;
 }

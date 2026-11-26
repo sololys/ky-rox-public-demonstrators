@@ -218,6 +218,8 @@ static inline omni_port_t omni_crash3_eval(
         in->g_barrier == OMNI_POISON_INT32_MIN ||
         in->g_dot == OMNI_POISON_INT32_MIN ||
         in->q_bound == 0U || in->q_bound > 0x7FFFFFFFU ||
+        in->k_defect > 0x7FFFFFFFU || in->b_barrier > 0x7FFFFFFFU ||
+        in->c_care > 0x7FFFFFFFU ||
         in->tau_risk == 0U || !in->u_safe_nonempty ||
         in->g_barrier >= 0 || in->lambda_spec > 0) {
         omni_latch_kill(r, OMNI_REASON_KILL_POISON_OR_BARRIER);
@@ -282,9 +284,11 @@ static inline omni_port_t omni_crash3_eval(
     uint64_t p_sq   = abs_pm * abs_pm;
     uint64_t k_sq   = (uint64_t)in->k_defect * (uint64_t)in->k_defect;
 
-    int64_t  a_h = (int64_t)(q_sq + p_sq)
-                 - 2LL * (int64_t)in->b_barrier
-                 + 2LL * (int64_t)in->c_care;
+    uint64_t h_pos = q_sq + p_sq + 2ULL * (uint64_t)in->c_care;
+    uint64_t h_neg = 2ULL * (uint64_t)in->b_barrier;
+    int64_t  a_h   = (h_pos >= h_neg)
+                   ? (int64_t)(h_pos - h_neg)
+                   : -(int64_t)(h_neg - h_pos);
     uint64_t b_h = 2ULL * k_sq + 2ULL * (uint64_t)in->b_barrier;
 
     /* Exact L_inf soft-channel excess (replaces weighted L_1 C_crash) */
@@ -331,7 +335,7 @@ static inline omni_port_t omni_crash3_eval(
         return OMNI_PORT_HOLD;
     }
 
-    if (!in->eta_hw_truth || !in->witness_ext || (in->seq_epoch != r->expected_epoch)) {
+    if (!in->eta_hw_truth || !in->witness_ext || (in->seq_epoch != r->expected_epoch) || (in->seq_epoch == 0xFFFFFFFFU)) {
         r->actuator_v_en = false;
         r->last_port     = OMNI_PORT_HOLD;
         r->last_reason   = OMNI_REASON_HOLD_NO_WITNESS;

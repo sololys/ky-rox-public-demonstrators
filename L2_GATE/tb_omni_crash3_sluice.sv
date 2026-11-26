@@ -263,6 +263,79 @@ module tb_omni_crash3_sluice;
         pulse_eval();
         print_vec("V12");
 
+        // V13: Simultaneous Upper Knife-Edge Across Every Channel -> OPEN (FUSE=0xFFFF)
+        pulse_l01_reset(1'b1);
+        set_nominal(expected_epoch_out);
+        q_pos       = -32'sd1000;
+        lambda_spec = 32'sd0;
+        g_barrier   = -32'sd200;
+        pi_risk     = 32'd199;
+        r_dot       = 32'd500;
+        dist_mm     = 32'd19999;
+        tof_ps      = 32'd133425;
+        s_phase_16  = 16'hFA5A;
+        r_mask_16   = 16'hF00F;
+        m_rx_16     = 16'h0A55;
+        pulse_eval();
+        print_vec("V13");
+
+        // V14: Negative-Side L_inf Exact Ceiling (q_pos=-1250 -> eps_k=250) -> HOLD
+        set_nominal(expected_epoch_out);
+        q_pos   = -32'sd1250;
+        pi_risk = 32'd0;
+        r_dot   = 32'd0;
+        pulse_eval();
+        print_vec("V14");
+
+        // V15: Z[phi] Opposite-Sign Split (HPHIA=-800, HPHIB=1000) -> OPEN
+        set_nominal(expected_epoch_out);
+        q_pos     = 32'sd0;
+        p_mom     = 32'sd0;
+        k_defect  = 32'd0;
+        b_barrier = 32'd500;
+        c_care    = 32'd100;
+        pulse_eval();
+        print_vec("V15");
+
+        // V16: Single-Axis L_inf +1 LSB Top (pi_risk=200==tau_risk) -> HOLD (LINF=1)
+        set_nominal(expected_epoch_out);
+        pi_risk = 32'd200;
+        r_dot   = 32'd0;
+        pulse_eval();
+        print_vec("V16");
+
+        // V17: Negative-Side 1-LSB Over-Ceiling (q_pos=-1251 -> eps_k=251) -> KILL
+        set_nominal(expected_epoch_out);
+        q_pos = -32'sd1251;
+        pulse_eval();
+        print_vec("V17");
+
+        // V18: Sub-Millimeter SI Light-Cone Edge (dist_mm=20000, tof_ps=133425) -> KILL
+        pulse_l01_reset(1'b1);
+        set_nominal(expected_epoch_out);
+        dist_mm = 32'd20000;
+        tof_ps  = 32'd133425;
+        pulse_eval();
+        print_vec("V18");
+
+        // V19: 63-Bit Max Non-Overflowing Z[phi] Corner -> OPEN
+        pulse_l01_reset(1'b1);
+        set_nominal(expected_epoch_out);
+        q_bound   = 32'h7FFF_FFFF;
+        q_pos     = 32'sd2147483647;
+        p_mom     = -32'sd2147483647;
+        k_defect  = 32'h7FFF_FFFF;
+        b_barrier = 32'd0;
+        c_care    = 32'h7FFF_FFFF;
+        pulse_eval();
+        print_vec("V19");
+
+        // V20: Z[phi] Over-Domain MSB Poison (k_defect = 0x80000000) -> KILL
+        set_nominal(expected_epoch_out);
+        k_defect = 32'h8000_0000;
+        pulse_eval();
+        print_vec("V20");
+
         $finish;
     end
 

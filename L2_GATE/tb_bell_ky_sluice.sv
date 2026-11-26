@@ -328,6 +328,105 @@ module tb_bell_ky_sluice;
         pulse_eval();
         print_vec("V12");
 
+        // V13: Exact Classical Bell Boundary (S1^2 == 4*N^2) -> bell_violated_k1=0, OPEN
+        stream_block(40'd10000,
+            45'sd5000, 45'sd5000, 45'sd5000, -45'sd5000,
+            45'sd4000, 45'sd4000, 45'sd4000, -45'sd4000);
+        set_nominal_cfg(40'd10000);
+        pulse_eval();
+        print_vec("V13");
+
+        // V14: +1 Physical Shot Step Over Bell Boundary (Sigma_1 = 20002)
+        @(negedge clk);
+        l01_reset_strobe = 1'b0; eval_en = 1'b0; load_en = 1'b1;
+        arm_idx = 1'b0; mn_idx = 2'd0; n_pulses_in = 40'd10000;
+        cnt_pp = 40'd3751; cnt_pm = 40'd1250; cnt_mp = 40'd1249; cnt_mm = 40'd3750;
+        @(posedge clk); #1; load_en = 1'b0;
+        load_one_arm_sym(1'b0, 2'd1, 40'd10000, 45'sd5000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b0, 2'd2, 40'd10000, 45'sd5000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b0, 2'd3, 40'd10000, -45'sd5000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b1, 2'd0, 40'd10000, 45'sd4000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b1, 2'd1, 40'd10000, 45'sd4000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b1, 2'd2, 40'd10000, 45'sd4000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b1, 2'd3, 40'd10000, -45'sd4000, 40'd0, 40'd0);
+        set_nominal_cfg(40'd10000);
+        pulse_eval();
+        print_vec("V14");
+
+        // V15: 128-Bit Seam Exact Equality (ds_sq == 2^68 == tau_diff_sq) -> HOLD
+        stream_block(40'h1_0000_0000,
+            45'sd2147483648, 45'sd2147483648, 45'sd2147483648, -45'sd2147483648,
+            -45'sd2147483648, -45'sd2147483648, -45'sd2147483648, 45'sd2147483648);
+        set_nominal_cfg(40'h1_0000_0000);
+        tau_diff_sq = {64'h0000_0000_0000_0010, 64'h0000_0000_0000_0000};
+        pulse_eval();
+        print_vec("V15");
+
+        // V16: 128-Bit Seam -1 LSB Borrow (tau_diff_sq = 2^68 - 1) -> OPEN
+        stream_block(40'h1_0000_0000,
+            45'sd2147483648, 45'sd2147483648, 45'sd2147483648, -45'sd2147483648,
+            -45'sd2147483648, -45'sd2147483648, -45'sd2147483648, 45'sd2147483648);
+        set_nominal_cfg(40'h1_0000_0000);
+        tau_diff_sq = {64'h0000_0000_0000_000F, 64'hFFFF_FFFF_FFFF_FFFF};
+        pulse_eval();
+        print_vec("V16");
+
+        // V17: MAX_PULSES = 2^38 Saturated Ceiling + +1mm Light-Cone Margin -> OPEN
+        stream_block(40'h40_0000_0000,
+            45'sd274877906944, 45'sd274877906944, 45'sd274877906944, -45'sd274877906944,
+            -45'sd274877906944, -45'sd274877906944, -45'sd274877906944, 45'sd274877906944);
+        set_nominal_cfg(40'h40_0000_0000);
+        delta_k_cycles = 32'd1000;
+        t_clk_ps       = 32'd1000000;
+        dist_mm        = 32'd149896230;
+        tau_diff_sq    = {64'h0000_0000_0003_FFFF, 64'hFFFF_FFFF_FFFF_FFFF};
+        pulse_eval();
+        print_vec("V17");
+
+        // V18: MAX_PULSES + 1 Over-Ceiling -> KILL
+        begin : blk_v18
+            integer a_i, m_i;
+            for (a_i = 0; a_i < 2; a_i = a_i + 1) begin
+                for (m_i = 0; m_i < 4; m_i = m_i + 1) begin
+                    @(negedge clk);
+                    l01_reset_strobe = 1'b0; eval_en = 1'b0; load_en = 1'b1;
+                    arm_idx = a_i[0]; mn_idx = m_i[1:0];
+                    n_pulses_in = 40'h40_0000_0001;
+                    cnt_pp = 40'h40_0000_0001; cnt_pm = 40'd0; cnt_mp = 40'd0; cnt_mm = 40'd0;
+                    @(posedge clk); #1; load_en = 1'b0;
+                end
+            end
+        end
+        set_nominal_cfg(40'h40_0000_0001);
+        pulse_eval();
+        print_vec("V18");
+
+        // V19: L01 Reset + Out-of-Order Interleaved Slot Attack -> KILL
+        pulse_l01_reset(1'b1);
+        load_one_arm_sym(1'b0, 2'd0, 40'd10000, 45'sd7000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b1, 2'd0, 40'd10000, 45'sd7000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b0, 2'd1, 40'd10000, 45'sd7000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b0, 2'd2, 40'd10000, 45'sd7000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b0, 2'd3, 40'd10000, -45'sd7000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b1, 2'd1, 40'd10000, 45'sd7000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b1, 2'd2, 40'd10000, 45'sd7000, 40'd0, 40'd0);
+        load_one_arm_sym(1'b1, 2'd3, 40'd10000, -45'sd7000, 40'd0, 40'd0);
+        set_nominal_cfg(40'd10000);
+        pulse_eval();
+        print_vec("V19");
+
+        // V20: L01 Reset + Exact Lightlike Boundary (lc_lhs == lc_rhs) -> KILL
+        pulse_l01_reset(1'b1);
+        stream_block(40'd10000,
+            45'sd7000, 45'sd7000, 45'sd7000, -45'sd7000,
+            45'sd6000, 45'sd6000, 45'sd6000, -45'sd6000);
+        set_nominal_cfg(40'd10000);
+        delta_k_cycles = 32'd1000;
+        t_clk_ps       = 32'd1000000;
+        dist_mm        = 32'd149896229;
+        pulse_eval();
+        print_vec("V20");
+
         $finish;
     end
 

@@ -314,7 +314,7 @@ class TestOmniCrash3ConjunctiveSluice(unittest.TestCase):
             for forbidden in ("%xmm", "%ymm", "%st(", "cvtsi2sd", "cvtsi2ss", "mulsd", "addsd"):
                 self.assertNotIn(forbidden, disasm)
             c_out = subprocess.check_output([str(c_bin)], text=True).strip().splitlines()
-            self.assertEqual(len(c_out), 12)
+            self.assertEqual(len(c_out), 20)
 
             if shutil.which("iverilog") and shutil.which("vvp"):
                 rtl_vvp = tdir / "omni_crash3_rtl.vvp"
@@ -348,6 +348,27 @@ class TestOmniCrash3ConjunctiveSluice(unittest.TestCase):
                     )
                     ps_out = [ln for ln in subprocess.check_output(["vvp", str(ps_vvp)], text=True).splitlines() if ln.startswith("V")]
                     self.assertEqual(c_out, ps_out)
+
+    def test_05_z_phi_fibonacci_powers_cassini_sign_flips_and_63bit_corner(self) -> None:
+        p_pos = ZPhi(1, 0)
+        p_neg = ZPhi(1, 0)
+        f_prev, f_curr = 1, 0
+        for _ in range(64):
+            p_pos = p_pos * PHI
+            p_neg = p_neg * PHI_INV
+            f_prev, f_curr = f_curr, f_prev + f_curr
+            self.assertEqual(p_pos, ZPhi(f_prev, f_curr))
+            self.assertEqual(p_pos * p_neg, ZPhi(1, 0))
+
+        f59, f60 = 956722026041, 1548008755920
+        self.assertFalse(ZPhi(f60, -f59).is_non_negative())
+        self.assertTrue(ZPhi(f60 + 1, -f59).is_non_negative())
+        self.assertTrue(ZPhi(-f60, f59).is_non_negative())
+        self.assertFalse(ZPhi(-f60 - 1, f59).is_non_negative())
+
+        self.assertEqual(exact_two_h_phi(0, 0, 0, 500, 100), ZPhi(-800, 1000))
+        m31 = 0x7FFFFFFF
+        self.assertEqual(exact_two_h_phi(m31, -m31, m31, 0, m31), ZPhi(9223372032559808512, 9223372028264841218))
 
 
 if __name__ == "__main__":
