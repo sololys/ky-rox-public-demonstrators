@@ -73,6 +73,19 @@ def credential_markers() -> tuple[bytes, ...]:
     return tuple(value.encode("ascii") for value in values)
 
 
+def private_leak_markers() -> tuple[bytes, ...]:
+    values = (
+        "/home/" + "sololyset",
+        "gemini" + "-core",
+        "05_" + "patents",
+        "07_" + "bokhylla",
+        "carbon" + "/",
+        "03_" + "engines/",
+        "09_" + "system",
+    )
+    return tuple(value.encode("ascii") for value in values)
+
+
 def main() -> int:
     findings: list[str] = []
     tracked = tracked_files()
@@ -102,6 +115,8 @@ def main() -> int:
         lower = data.lower()
         if any(marker in lower for marker in credential_markers()):
             findings.append(f"credential marker requires private review: {relative}")
+        if any(marker in lower for marker in private_leak_markers()):
+            findings.append(f"private monorepo path leak prohibited: {relative}")
 
     if findings:
         print("PUBLIC_TREE_GATE=KILL")

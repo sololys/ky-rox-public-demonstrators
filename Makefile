@@ -5,7 +5,7 @@
 .PHONY: hold verify sim_400c sim_205b sim_omega64 qnx_omega64
 
 hold:
-	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains, The 7 Monoliths, and SPEC-412..415 Domain Gates."
+	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains and all 10 Demonstrator Suites (60/60 PASS)."
 	@exit 1
 
 sim_400c:
@@ -48,4 +48,4 @@ verify:
 	@PYTHONPATH=tools python3 -m unittest -q tools/test_agy_ky_blackbox_harness.py
 	@PYTHONPATH=tools python3 -m unittest -q tools/test_export_blast_sphere.py
 	@python3 run_demo.py
-	@echo "[L1_VERIFIED // HOLD_READY_FOR_W2] L1 software checks passed (PHYSICAL_AUTHORITY=NONE; W_human required for W2). All 8 Suites (48/48) and 10/10 L1_LAW bounds satisfied."
+	@echo "[L1_VERIFIED // HOLD_READY_FOR_W2] L1 software checks passed (PHYSICAL_AUTHORITY=NONE; W_human required for W2). All 10 Suites (60/60), 7/7 microtest dirs, and 10/10 L1_LAW bounds satisfied."

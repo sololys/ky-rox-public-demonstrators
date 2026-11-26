@@ -4,9 +4,9 @@
 
 # KY-ROX Public Demonstrators — Runnable Gates & FPGA Prototypes
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24032490.svg)](https://doi.org/10.5281/zenodo.24032490)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.24032490-4a5568?style=flat-square)](https://doi.org/10.5281/zenodo.24032490)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0006--0431--6637-A6CE39?style=flat-square)](https://orcid.org/0009-0006-0431-6637)
-[![Granitum Physics](https://img.shields.io/badge/SALON-Granitum_Physics_(LinkedIn)-0A66C2?style=flat-square)](https://www.linkedin.com/groups/40622443/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-4a5568?style=flat-square)](LICENSE)
 
 > **Coordinate (`4 · Gate`):** [`(0,0) sololys`](https://github.com/sololys) — [`1 · Word`](https://github.com/sololys/skrivevaerelset) → [`2 · Draft`](https://github.com/sololys/epistemic-architectures-notes) → [`3 · Rule`](https://github.com/sololys/epistemic-architectures) → **`[4 · Gate]`** → [`5 · Seal`](https://github.com/sololys/monolitt)
 
@@ -15,7 +15,7 @@ Runnable Python microtests (Python 3.10+ Standard Library only) and synthesizabl
 $$\Omega(x, e, r_{\mathrm{hold}}, \tau) = \begin{cases} \mathrm{KILL\_GATE\_CAPTURE}\;(0.00\text{ V}) & \text{if } \Omega_1 \neq \Omega_2 \;\text{(sticky)} \\ \mathrm{KILL}\;(0.00\text{ V}) & \text{if } \Omega_1 = \Omega_2 \land \Delta_K(x) > \tau_K \\ \mathrm{OPEN}\;(5.00\text{ V}) & \text{if } \Omega_1 = \Omega_2 \land \Delta_K(x) \le \tau_K \land e \neq \varnothing \land \mathrm{Zone}(x) = \mathrm{CLEAR} \\ \mathrm{HOLD}\;(0.00\text{ V}, \mathrm{P}_{\mathrm{INT}}) & \text{if } \Omega_1 = \Omega_2 \land \Delta_K(x) \le \tau_K \land (e = \varnothing \lor \mathrm{Zone}(x) = \mathrm{OCCUPIED}) \land r_{\mathrm{hold}} \neq \varnothing \land \tau \le \tau_{\max} \\ \mathrm{HOLD}\;(0.00\text{ V}, \mathrm{P}_{\mathrm{EXT}}, e_{\mathrm{pend}} \leftarrow \varnothing) & \text{if } \Omega_1 = \Omega_2 \land \Delta_K(x) \le \tau_K \land (e = \varnothing \lor \mathrm{Zone}(x) = \mathrm{OCCUPIED}) \land (r_{\mathrm{hold}} = \varnothing \lor \tau > \tau_{\max}) \end{cases}$$
 
 * **Author:** Marius Egerhei Torjusen · Risør, Norway ([ORCID `0009-0006-0431-6637`](https://orcid.org/0009-0006-0431-6637) · Zenodo DOIs [`10.5281/zenodo.18436983`](https://doi.org/10.5281/zenodo.18436983) · [`10.5281/zenodo.22229111`](https://doi.org/10.5281/zenodo.22229111))
-* **Epistemic Boundary (`INSPIRED_BY != IMPLEMENTS != PROVES`):** Bounded `L1` software microtests (`48/48 PASS` across 8 suites + `10/10 PASS` in `L1_LAW`) and `L1`/`L1.5` RTL testbenches (`0.00 V DC`, zero physical or operational authority).
+* **Epistemic Boundary (`INSPIRED_BY != IMPLEMENTS != PROVES`):** Bounded `L1` software microtests (`60/60 PASS` across 10 suites — 7 microtests, 2 monolith gates, and `KY v1.5` — plus `10/10 PASS` in `L1_LAW/invariants_pure.py`) and `L1`/`L1.5` C11/QNX/RTL testbenches (`0.00 V DC`, zero physical or operational authority).
 
 ---
 
@@ -26,14 +26,16 @@ $$\Omega(x, e, r_{\mathrm{hold}}, \tau) = \begin{cases} \mathrm{KILL\_GATE\_CAPT
 make
 # -> [HOLD] 0.00 V DC. System is at rest. (exit code 1)
 
-# Full deterministic verification of L1_LAW (10/10), L2_GATE, and 8 Suites (48/48 PASS):
+# Full deterministic verification of L1_LAW (10/10), L2_GATE, 7 microtests, and 10 Suites (60/60 PASS):
 make verify
 # Or directly:
 python3 run_demo.py
 
-# Optional SystemVerilog RTL simulation (requires iverilog):
-make sim_205b   # 205-byte capsule frame decoder & 12.5 us guillotine testbench
-make sim_400c   # 400-cycle temporal bifurcation gate testbench
+# Optional C11, QNX 8.0, and SystemVerilog RTL verification:
+make sim_205b     # 205-byte capsule frame decoder & 12.5 us guillotine testbench (iverilog)
+make sim_400c     # 400-cycle temporal bifurcation gate testbench (iverilog)
+make sim_omega64  # Zero-float C11 64-byte SPI HAL pack + SystemVerilog symplectic watchdog
+make qnx_omega64  # Dual-arch QNX 8.0 build (qcc x86_64 + aarch64le, 0 float, -Werror)
 ```
 
 ---
@@ -43,15 +45,15 @@ make sim_400c   # 400-cycle temporal bifurcation gate testbench
 | Directory | Role | Primary Artifacts |
 | :--- | :--- | :--- |
 | **[`L1_LAW/`](L1_LAW/)** | Pure mathematical definitions (`KY_ROX_SCOPE_GATE_V0_2`), KY codec & public boundary contracts. Zero I/O. | [`invariants_pure.py`](L1_LAW/invariants_pure.py) (`10/10 PASS`) · [`ky_v15_clean_parser.py`](L1_LAW/ky_v15_clean_parser.py) (`6/6 PASS`, `0 float`) · [`KY_SPEC_v1.5.md`](L1_LAW/KY_SPEC_v1.5.md) · [`ky_parser.py`](L1_LAW/ky_parser.py) · [`PUBLIC_BOUNDARY.md`](L1_LAW/PUBLIC_BOUNDARY.md) · [`STATUS_PUBLIC.md`](L1_LAW/STATUS_PUBLIC.md) · [`SECURITY.md`](L1_LAW/SECURITY.md) |
-| **[`L2_GATE/`](L2_GATE/)** | Consequence gate evaluators ($\Omega \circ \Pi_K$) & SystemVerilog RTL gate modules. | [`evaluate_boundaries.py`](L2_GATE/evaluate_boundaries.py) · [`fpga_capsule_frame_205b_decoder.sv`](L2_GATE/fpga_capsule_frame_205b_decoder.sv) · [`kpod_fpga_guillotine_12u5.sv`](L2_GATE/kpod_fpga_guillotine_12u5.sv) · [`temporal_bifurcation_400c.sv`](L2_GATE/temporal_bifurcation_400c.sv) · [`gothenburg_corridor_rosetta_top.sv`](L2_GATE/gothenburg_corridor_rosetta_top.sv) |
+| **[`L2_GATE/`](L2_GATE/)** | Consequence gate evaluators ($\Omega \circ \Pi_K$), C11/QNX 64B SPI HAL, & SystemVerilog RTL gate modules. | [`evaluate_boundaries.py`](L2_GATE/evaluate_boundaries.py) · [`omega_hal_pack.c`](L2_GATE/omega_hal_pack.c) · [`omega_qnx_resmgr.c`](L2_GATE/omega_qnx_resmgr.c) · [`omega_symplectic_watchdog_64b.sv`](L2_GATE/omega_symplectic_watchdog_64b.sv) · [`fpga_capsule_frame_205b_decoder.sv`](L2_GATE/fpga_capsule_frame_205b_decoder.sv) · [`kpod_fpga_guillotine_12u5.sv`](L2_GATE/kpod_fpga_guillotine_12u5.sv) · [`temporal_bifurcation_400c.sv`](L2_GATE/temporal_bifurcation_400c.sv) · [`gothenburg_corridor_rosetta_top.sv`](L2_GATE/gothenburg_corridor_rosetta_top.sv) |
 | **[`L3_WITNESS/`](L3_WITNESS/)** | Append-only SHA-256 hash-chain log ($W^2$). | [`audit_log.jsonl`](L3_WITNESS/audit_log.jsonl) *(software hash chain, not physical WORM)* |
-| **[`artifacts/microtests/`](artifacts/microtests/) & [`monoliths/`](monoliths/)** | The Seven Monoliths & `SPEC-412..415` Domain Gates (`8 x 6/6 = 48/48 PASS` + `CHECKSUMS.sha256`). | See Section III below |
+| **[`artifacts/microtests/`](artifacts/microtests/) & [`monoliths/`](monoliths/)** | Seven Microtest Suites (`7 x 6/6` + `CHECKSUMS.sha256`), Two Horizon/Domain Monoliths (`SPEC-412..415`), & `KY v1.5` (`10 x 6/6 = 60/60 PASS`). | See Section III below |
 | **[`punkt/contracts/`](punkt/contracts/)** | Claim-level & decision vocabulary contracts (`INSPIRED_BY != IMPLEMENTS != PROVES`). | [`claim-levels.md`](punkt/contracts/claim-levels.md) · [`candidate-not-consequence.md`](punkt/contracts/candidate-not-consequence.md) · [`decision-vocabulary.md`](punkt/contracts/decision-vocabulary.md) |
 | **[`demos/granite-sg48-etor-cascade/`](demos/granite-sg48-etor-cascade/)** | Interactive 3D WebGL demonstrator for the `iCE40UP5K-SG48` E-TOR Cascade (`4 648/5 280 LC`, `26.22 MHz` STA, 242B UART map, `L1.5` model). | [`App.tsx`](demos/granite-sg48-etor-cascade/src/App.tsx) · [`etorProtocol.ts`](demos/granite-sg48-etor-cascade/src/sim/etorProtocol.ts) · [`GraniteViewport.tsx`](demos/granite-sg48-etor-cascade/src/scene/GraniteViewport.tsx) |
 
 ---
 
-## III. The Seven Monoliths & `SPEC-412..415` Domain Gates (`48/48 PASS`)
+## III. Ten Public Demonstrator Suites (`10 x 6/6 = 60/60 PASS`)
 
 Every demonstrator in [`artifacts/microtests/`](artifacts/microtests/) and [`monoliths/`](monoliths/) enforces deterministic execution, unit tests (`6/6 PASS` per suite), and cryptographic integrity:
 
@@ -64,8 +66,9 @@ Every demonstrator in [`artifacts/microtests/`](artifacts/microtests/) and [`mon
 | **5. [M-Polynomial & 1-WL Molecular Gate v0.1](artifacts/microtests/mpolynomial_1wl_molecular_gate_v0_1/SURFACE.md)** | Algebraic Graph Gate ($M(G; x, y)$ & $\Pi_K$) | $M(G; x, y) = \sum_{i \le j} m_{ij}x^i y^j$. Soft GNN concatenation ($h_v^{(0)} \parallel M_1 \parallel R \parallel H$) cannot resolve 1-WL co-polynomial collisions (Decalin vs. Bicyclopentyl $\to \text{HOLD}$) or block organic Texas Carbon ($\text{KILL}$), while admitting bio-inorganic `[Fe7MoS9C]` $\mu_6\text{-C}$ ($\text{OPEN}$). | [`mpolynomial_1wl_molecular_gate.py`](artifacts/microtests/mpolynomial_1wl_molecular_gate_v0_1/mpolynomial_1wl_molecular_gate.py) (**`6/6 PASS`**) |
 | **6. [PWR2 Scrambling vs. Collective Gate v0.1](artifacts/microtests/pwr2_scrambling_collective_gate_v0_1/SURFACE.md)** | Spectral Spin-Graph Gate ($\Gamma_q^2(K)$ & $k^* \sim \sqrt{N}$) | $\Gamma_q^2(K) = \lambda_K(\lambda_q - \lambda_K)$. At staggered Néel mode $K = N/2$, only `PWR2` has $\lambda_{N/2} > 0$ ($\text{KILL}$ for $k > \sqrt{N}$), while symmetric collective states ($k = 0, \Delta > 0$) pass as $\text{OPEN}$. | [`pwr2_scrambling_collective_gate.py`](artifacts/microtests/pwr2_scrambling_collective_gate_v0_1/pwr2_scrambling_collective_gate.py) (**`6/6 PASS`**) |
 | **7. [Horisont I: Staggered-PRF Fine–Wilf Gate v0.1](monoliths/staggered_prf_fine_wilf_gate.py)** | Combinatorial SDR Horizon ($L^* = p + q - \gcd(p,q)$) | Rejects dual-periodic Sturmian multipath ghost collisions at $L^* = 12$ ($p=5, q=8$), enforces array Bragg coherence $R \ge 0.95$, and integrates continuous Doppler range-rate $\int v_r\,\mathrm{d}t$. | [`staggered_prf_fine_wilf_gate.py`](monoliths/staggered_prf_fine_wilf_gate.py) (**`6/6 PASS`**) |
-| **8. [Horisont II: Domain Gates `SPEC-412..415` v2.0](monoliths/spec412_415_domain_gates.py)** | Forlik (`SPEC-412`), Orbital (`SPEC-413`), Radar (`SPEC-414`), Benthic K-POD (`SPEC-415`) | 72h cooling-off & UWB proximity ($40/c \pm 4.5\text{ ns}$); sub-half-wavelength $|s_{\text{obs}}| \le 1$ & $K_p < 7.0$ stasis; 16-pt Radix-4 FFT, 5:6 CRT unfolding & Thom $A_5$ pocket ($c_{\text{war}} = +0.5525$); $-240\text{ m}$ 5 CDC locks, $^{57}\text{Fe}$ Mössbauer & Doppler-to-ToF courier bridge. | [`spec412_415_domain_gates.py`](monoliths/spec412_415_domain_gates.py) (**`6/6 PASS`**) |
+| **8. [Horisont II: Domain Gates `SPEC-412..415` v2.0](monoliths/spec412_415_domain_gates.py)** | Forlik (`SPEC-412`), Orbital (`SPEC-413`), Radar (`SPEC-414`), Benthic K-POD (`SPEC-415`) | 72h cooling-off & UWB proximity ($40/c \pm 4.5\text{ ns}$); sub-half-wavelength $\lvert s_{\text{obs}}\rvert \le 1$ & $K_p < 7.0$ stasis; 16-pt Radix-4 FFT, 5:6 CRT unfolding & Thom $A_5$ pocket ($c_{\text{war}} = +0.5525$); $-240\text{ m}$ 5 CDC locks, $^{57}\text{Fe}$ Mössbauer & Doppler-to-ToF courier bridge. | [`spec412_415_domain_gates.py`](monoliths/spec412_415_domain_gates.py) (**`6/6 PASS`**) |
 | **9. [Sosionomos XOR/ROX Gate v0.1](artifacts/microtests/sosionomos_xor_rox_gate_v0_1/SURFACE.md)** | Social Realization Gate (`0 float`, `XOR`/`ROX`) | `StateCandidate (0x01) ^ RealizedConsequence (0x02) == 1`; double-pulse `XOR` involution (`MASK_MUTATED => KILL`), non-involutive `ROX` seal at `OPEN`, integer LUT Amygdala `HOLD`, `O(1)` backpressure `TRAP` to `ShadowDAG`, and `HOT/WARM/COLD` anchor survival. Spec: [`OMNI-KY & Sosionomos`](https://github.com/sololys/epistemic-architectures/blob/main/L1_LAW/OMNI_KY_SUSY2_SOSIONOMOS_BRIDGE_SPEC_v1.0.md). | [`sosionomos_xor_rox_gate.py`](artifacts/microtests/sosionomos_xor_rox_gate_v0_1/sosionomos_xor_rox_gate.py) (**`6/6 PASS`**) |
+| **10. [KY Realization Grammar v1.5](L1_LAW/KY_SPEC_v1.5.md)** | Clean Causal Parser (`0 float`, `Option A`) | Enforces $\Sigma_{\text{state}}(\bullet) \cap \Sigma_{\text{suffix}}(!) = \varnothing$, strict $D_0 \to D_3$ transition order, `CONSEQUENCE_UNCERTAIN` tether (`BLIND_RETRY` forbidden), and Registry A rejection of bare Unicode or unanchored hash chains. | [`ky_v15_clean_parser.py`](L1_LAW/ky_v15_clean_parser.py) · [`test_ky_v15_clean_parser.py`](L1_LAW/test_ky_v15_clean_parser.py) (**`6/6 PASS`**) |
 
 ---
 
@@ -73,7 +76,7 @@ Every demonstrator in [`artifacts/microtests/`](artifacts/microtests/) and [`mon
 
 ```text
 PUBLIC_TREE_GATE             = PASS
-MICROTEST_GATE               = PASS (8 suites / 48 unit tests + L1_LAW + L2_GATE)
+MICROTEST_GATE               = PASS (10 suites / 60 unit tests; 7 microtest dirs + L1_LAW + L2_GATE)
 SCOPE                        = EXACT_CHECKED_TREE_ONLY
 CLAIM_STATUS                 = HOLD (INSPIRED_BY != IMPLEMENTS != PROVES)
 SIMULATION_CLASSIFICATION    = OPEN_AS_SOFTWARE_DEMONSTRATION (0xABCDEF00 — deterministisk demonstrert i simuleringsmotoren)
