@@ -2,7 +2,7 @@
 # Default target is FAIL-CLOSED (0.00 V DC). Explicit verification is mandatory.
 
 .DEFAULT_GOAL := hold
-.PHONY: hold verify sim_400c sim_205b sim_omega64 qnx_omega64
+.PHONY: hold verify sim_400c sim_205b sim_omega64 qnx_omega64 sim_vektor_a qnx_vektor_a
 
 hold:
 	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains and all 10 Demonstrator Suites (60/60 PASS)."
@@ -34,6 +34,21 @@ qnx_omega64:
 	@qcc -Vgcc_ntoaarch64le -std=gnu11 -O2 -Wall -Wextra -Werror -c L2_GATE/omega_qnx_resmgr.c -o /tmp/qnx_omega64_build/omega_qnx_resmgr_aarch64le.o
 	@rm -rf /tmp/qnx_omega64_build
 	@echo "QNX_OMEGA64_DUAL_ARCH_BUILD=PASS (x86_64 + aarch64le, 0 FLOAT, -Werror)"
+
+sim_vektor_a:
+	@gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -o /tmp/ky_rox_test_vektor_a L2_GATE/test_vektor_a_spec411_c11.c
+	@/tmp/ky_rox_test_vektor_a
+	@rm -f /tmp/ky_rox_test_vektor_a
+	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_vektor_a.vvp L2_GATE/vektor_a_airlock.sv L2_GATE/spec411_galvanic_gate.sv L2_GATE/vektor_a_spec411_sluice_top.sv L2_GATE/tb_vektor_a_spec411_sluice.sv
+	@vvp /tmp/ky_rox_tb_vektor_a.vvp
+	@rm -f /tmp/ky_rox_tb_vektor_a.vvp
+
+qnx_vektor_a:
+	@mkdir -p /tmp/qnx_vektor_a_build
+	@qcc -Vgcc_ntox86_64 -std=gnu11 -O2 -Wall -Wextra -Werror -c L2_GATE/vektor_a_qnx_resmgr.c -o /tmp/qnx_vektor_a_build/vektor_a_qnx_resmgr_x86_64.o
+	@qcc -Vgcc_ntoaarch64le -std=gnu11 -O2 -Wall -Wextra -Werror -c L2_GATE/vektor_a_qnx_resmgr.c -o /tmp/qnx_vektor_a_build/vektor_a_qnx_resmgr_aarch64le.o
+	@rm -rf /tmp/qnx_vektor_a_build
+	@echo "QNX_VEKTOR_A_DUAL_ARCH_BUILD=PASS (x86_64 + aarch64le, 133425 PS DIAMOND, 0 FLOAT, -Werror)"
 
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py

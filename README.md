@@ -32,6 +32,8 @@ make verify
 python3 run_demo.py
 
 # Optional C11, QNX 8.0, and SystemVerilog RTL verification:
+make sim_vektor_a # 133,425 ps (20.0 m) Vektor A light-cone airlock + SPEC-411 galvanic sluice (C11 + iverilog)
+make qnx_vektor_a # Dual-arch QNX 8.0 Vektor A + SPEC-411 safety cage (qcc x86_64 + aarch64le, 0 float)
 make sim_205b     # 205-byte capsule frame decoder & 12.5 us guillotine testbench (iverilog)
 make sim_400c     # 400-cycle temporal bifurcation gate testbench (iverilog)
 make sim_omega64  # Zero-float C11 64-byte SPI HAL pack + SystemVerilog symplectic watchdog
@@ -45,11 +47,18 @@ make qnx_omega64  # Dual-arch QNX 8.0 build (qcc x86_64 + aarch64le, 0 float, -W
 | Directory | Role | Primary Artifacts |
 | :--- | :--- | :--- |
 | **[`L1_LAW/`](L1_LAW/)** | Pure mathematical definitions (`KY_ROX_SCOPE_GATE_V0_2`), KY codec & public boundary contracts. Zero I/O. | [`invariants_pure.py`](L1_LAW/invariants_pure.py) (`10/10 PASS`) · [`ky_v15_clean_parser.py`](L1_LAW/ky_v15_clean_parser.py) (`6/6 PASS`, `0 float`) · [`KY_SPEC_v1.5.md`](L1_LAW/KY_SPEC_v1.5.md) · [`ky_parser.py`](L1_LAW/ky_parser.py) · [`PUBLIC_BOUNDARY.md`](L1_LAW/PUBLIC_BOUNDARY.md) · [`STATUS_PUBLIC.md`](L1_LAW/STATUS_PUBLIC.md) · [`SECURITY.md`](L1_LAW/SECURITY.md) |
-| **[`L2_GATE/`](L2_GATE/)** | Consequence gate evaluators ($\Omega \circ \Pi_K$), C11/QNX 64B SPI HAL, & SystemVerilog RTL gate modules. | [`evaluate_boundaries.py`](L2_GATE/evaluate_boundaries.py) · [`omega_hal_pack.c`](L2_GATE/omega_hal_pack.c) · [`omega_qnx_resmgr.c`](L2_GATE/omega_qnx_resmgr.c) · [`omega_symplectic_watchdog_64b.sv`](L2_GATE/omega_symplectic_watchdog_64b.sv) · [`fpga_capsule_frame_205b_decoder.sv`](L2_GATE/fpga_capsule_frame_205b_decoder.sv) · [`kpod_fpga_guillotine_12u5.sv`](L2_GATE/kpod_fpga_guillotine_12u5.sv) · [`temporal_bifurcation_400c.sv`](L2_GATE/temporal_bifurcation_400c.sv) · [`gothenburg_corridor_rosetta_top.sv`](L2_GATE/gothenburg_corridor_rosetta_top.sv) |
+| **[`L2_GATE/`](L2_GATE/)** | Consequence gate evaluators ($\Omega \circ \Pi_K$), `133,425 ps` Vektor A light-cone airlock, `SPEC-411` galvanic sluice, C11/QNX 64B SPI HAL, & SystemVerilog RTL gate modules. | [`vektor_a_airlock.sv`](L2_GATE/vektor_a_airlock.sv) · [`vektor_a_gate.h`](L2_GATE/vektor_a_gate.h) · [`spec411_galvanic_gate.sv`](L2_GATE/spec411_galvanic_gate.sv) · [`spec411_gate.h`](L2_GATE/spec411_gate.h) · [`vektor_a_spec411_sluice_top.sv`](L2_GATE/vektor_a_spec411_sluice_top.sv) · [`vektor_a_qnx_resmgr.c`](L2_GATE/vektor_a_qnx_resmgr.c) · [`evaluate_boundaries.py`](L2_GATE/evaluate_boundaries.py) · [`omega_hal_pack.c`](L2_GATE/omega_hal_pack.c) · [`omega_qnx_resmgr.c`](L2_GATE/omega_qnx_resmgr.c) · [`omega_symplectic_watchdog_64b.sv`](L2_GATE/omega_symplectic_watchdog_64b.sv) · [`fpga_capsule_frame_205b_decoder.sv`](L2_GATE/fpga_capsule_frame_205b_decoder.sv) · [`kpod_fpga_guillotine_12u5.sv`](L2_GATE/kpod_fpga_guillotine_12u5.sv) · [`temporal_bifurcation_400c.sv`](L2_GATE/temporal_bifurcation_400c.sv) · [`gothenburg_corridor_rosetta_top.sv`](L2_GATE/gothenburg_corridor_rosetta_top.sv) |
 | **[`L3_WITNESS/`](L3_WITNESS/)** | Append-only SHA-256 hash-chain log ($W^2$). | [`audit_log.jsonl`](L3_WITNESS/audit_log.jsonl) *(software hash chain, not physical WORM)* |
 | **[`artifacts/microtests/`](artifacts/microtests/) & [`monoliths/`](monoliths/)** | Seven Microtest Suites (`7 x 6/6` + `CHECKSUMS.sha256`), Two Horizon/Domain Monoliths (`SPEC-412..415`), & `KY v1.5` (`10 x 6/6 = 60/60 PASS`). | See Section III below |
 | **[`punkt/contracts/`](punkt/contracts/)** | Claim-level & decision vocabulary contracts (`INSPIRED_BY != IMPLEMENTS != PROVES`). | [`claim-levels.md`](punkt/contracts/claim-levels.md) · [`candidate-not-consequence.md`](punkt/contracts/candidate-not-consequence.md) · [`decision-vocabulary.md`](punkt/contracts/decision-vocabulary.md) |
 | **[`demos/granite-sg48-etor-cascade/`](demos/granite-sg48-etor-cascade/)** | Interactive 3D WebGL demonstrator for the `iCE40UP5K-SG48` E-TOR Cascade (`4 648/5 280 LC`, `26.22 MHz` STA, 242B UART map, `L1.5` model). | [`App.tsx`](demos/granite-sg48-etor-cascade/src/App.tsx) · [`etorProtocol.ts`](demos/granite-sg48-etor-cascade/src/sim/etorProtocol.ts) · [`GraniteViewport.tsx`](demos/granite-sg48-etor-cascade/src/scene/GraniteViewport.tsx) |
+
+### II.B `133,425 ps` Causal Light-Cone Airlock & `SPEC-411` Galvanic Sluice (`L1` / `L1.5`)
+
+For local-first critical infrastructure interlocks (`Infranett` / `KY-ROX`), [`L2_GATE/`](L2_GATE/) pairs exact integer C11, QNX Neutrino 8.0 (`_NTO_CHF_FIXED_PRIORITY | _NTO_CHF_DISCONNECT`), and synthesizable `IEEE 1800-2012` SystemVerilog (`Lattice iCE40UP5K-SG48`):
+
+- **Vektor A (`133,425 ps` Alexandrov Diamond):** Binds local actuation wake (`core_wake_en`) to round-trip speed-of-light Time-of-Flight over $R_{\max} = 20.0\text{ m}$ ($\tau_{\max} = \lfloor 40.0\text{ m} / c \rfloor = 133{,}425\text{ ps}$ at $c = 299{,}792{,}458\text{ m/s}$, rejecting $+1\text{ ps}$ at $133{,}426\text{ ps}$ and $500\text{ m}$ relays at $3{,}335{,}640\text{ ps}$ into `CAUSAL_HOLD` at `0.00 V DC`), locked to a $\pm 5.0\text{ ppm}$ crystal window ($200{,}000 \pm 1\text{ tick}$) and a one-way optical telemetry diode (`optical_tx_only`).
+- **`SPEC-411` Dual-Rail Galvanic Separation ($\partial \Omega_Y / \partial \Omega_T \equiv 0$):** Hardwires the unconditional Fail-Open existence rail ($\Omega_Y = 5.00\text{ V}$, `0x01`) independently of the Fail-Closed actuation rail ($\Omega_T \in \{0.00\text{ V}, 5.00\text{ V}\}$, `0x02`), with exact integer cross-multiplied divergence gating ($\Delta_K < \varepsilon$), Butterfly Pocket $A_5$ stasis (`0x08`), and non-erasing Level 01 reset recovery (`make sim_vektor_a`: `10/10` C11 + `17/17` RTL vectors, `XOR == 0`).
 
 ---
 
