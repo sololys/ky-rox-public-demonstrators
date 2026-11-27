@@ -323,7 +323,7 @@ class TestBellKY7QubitCPTPSluice(unittest.TestCase):
             for forbidden in ("%xmm", "%ymm", "%st(", "cvtsi2sd", "cvtsi2ss", "mulsd", "addsd"):
                 self.assertNotIn(forbidden, disasm)
             c_out = subprocess.check_output([str(c_bin)], text=True).strip().splitlines()
-            self.assertEqual(len(c_out), 20)
+            self.assertEqual(len(c_out), 22)
 
             if shutil.which("iverilog") and shutil.which("vvp"):
                 rtl_vvp = tdir / "bell_ky_rtl.vvp"

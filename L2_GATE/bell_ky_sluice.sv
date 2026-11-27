@@ -1,8 +1,9 @@
 // =============================================================================
-// L2_GATE — 29.KY Bell-KY Zero-Float Consequence Sluice (SystemVerilog RTL)
+// CARBON 98 — 29.KY Bell-KY Zero-FP Consequence Sluice (SystemVerilog RTL)
 // Module   : bell_ky_sluice
-// Architecture : Single-arm-channel 8-slot streaming + shared 96-bit MAC +
-//                shared 95-bit borrow-comparator (0 SB_MAC16, 0 FP, fits
+// Architecture : Single-arm-channel 8-slot streaming + two-stroke 48+48 split
+//                serial MAC + two-stroke 47+47 split borrow-comparator +
+//                4-stage II=1 No-Signalling pipeline (0 SB_MAC16, 0 FP, fits
 //                comfortably inside a single Lattice iCE40UP5K-SG48).
 // Parity       : 100% cycle- and bit-exact with bell_ky_sluice.h (C11).
 // =============================================================================
@@ -105,17 +106,28 @@ module bell_ky_sluice (
     reg signed [42:0] sigma_k1;
     reg signed [42:0] sigma_k2;
     reg [40:0]        pa_reg, pb0_reg, pb1_reg;
-    reg [40:0]        max_ns_dev;
-    reg               ns_pipe_vld;
-    reg               ns_pipe_clr;
+
+    // Decoupled II=1 No-Signalling pipeline (1 carry chain per stage)
+    reg               ns_s1_vld;
     reg signed [41:0] ns_d1, ns_d2;
+    reg               ns_s2_vld;
+    reg [40:0]        ns_abs1, ns_abs2;
+    reg               ns_s3_vld;
+    reg [40:0]        ns_pair_max;
+    reg [40:0]        max_ns_dev;
     reg [39:0]        lat_tau_ns;
 
+    // Two-stroke 48+48 split serial MAC (telescoping carry, converged by bit_cnt == 44)
     reg [2:0]  mac_phase;
     reg [5:0]  bit_cnt;
     reg [47:0] mul_op;
     reg [95:0] mul_sh;
-    reg [95:0] mul_acc;
+    reg [47:0] acc_lo;
+    reg [47:0] acc_hi;
+    reg        acc_carry;
+    reg [47:0] add_hi_d1;
+
+    wire [95:0] mul_acc_full = {acc_hi, acc_lo};
 
     reg        lat_shot_bad;
     reg        lat_lc_zero;
@@ -127,6 +139,7 @@ module bell_ky_sluice (
     reg        lat_tomo_bad;
     reg        lat_quorum_ok;
     reg [41:0] lat_abs_s2;
+    reg signed [43:0] lat_diff_sigma;
     reg [42:0] lat_abs_ds;
     reg [39:0] lat_np;
     reg [31:0] lat_dk, lat_tclk, lat_dist;
@@ -140,7 +153,7 @@ module bell_ky_sluice (
     reg        flag_super_ts;
     reg        flag_lc_bad;
 
-    // Single-channel load sums (half the adders & comparators!)
+    // Decoupled load sums: register cur_pa/cur_pb/c_signed first if needed, or keep single 41b add
     wire [40:0] cur_pa   = {1'b0, cnt_pp} + {1'b0, cnt_pm};
     wire [40:0] cur_pb   = {1'b0, cnt_pp} + {1'b0, cnt_mp};
     wire [40:0] cnt_same = {1'b0, cnt_pp} + {1'b0, cnt_mm};
@@ -162,55 +175,58 @@ module bell_ky_sluice (
     wire signed [41:0] sub_main = $signed({1'b0, ref_main}) - $signed({1'b0, cur_main});
     wire signed [41:0] sub_b1   = $signed({1'b0, pb1_reg})  - $signed({1'b0, cur_pb});
 
-    // Stage-B pipelined absolute value & max (decoupled from cur_pa/cur_pb adders)
-    wire [40:0] abs_d1   = ns_d1[41] ? (-ns_d1[40:0]) : ns_d1[40:0];
-    wire [40:0] abs_d2   = ns_d2[41] ? (-ns_d2[40:0]) : ns_d2[40:0];
-    wire [40:0] pipe_dev = (abs_d1 >= abs_d2) ? abs_d1 : abs_d2;
-    wire [40:0] base_ns  = ns_pipe_clr ? 41'd0 : max_ns_dev;
-
     // Eval start helpers
-    wire signed [43:0] diff_sigma = $signed({sigma_k1[42], sigma_k1}) -
-                                    $signed({sigma_k2[42], sigma_k2});
+    wire signed [43:0] diff_sigma_now = $signed({sigma_k1[42], sigma_k1}) -
+                                        $signed({sigma_k2[42], sigma_k2});
     wire [41:0] abs_s1_now = sigma_k1[42] ? (-sigma_k1[41:0]) : sigma_k1[41:0];
     wire [41:0] abs_s2_now = sigma_k2[42] ? (-sigma_k2[41:0]) : sigma_k2[41:0];
-    wire [42:0] abs_ds_now = diff_sigma[43] ? (-diff_sigma[42:0]) : diff_sigma[42:0];
 
     wire shot_bad_now = (!np_valid) || (min_series == 16'd0) ||
                         (loaded_mask != 8'hFF) || shot_err_accum ||
                         (n_pulses_in != n_pulses_latched);
 
-    wire [95:0] next_acc = mul_acc + (mul_op[0] ? mul_sh : 96'd0);
+    // Split 48+48 MAC adders (single SB_CARRY chain per half via LSB carry-in)
+    wire [47:0] mac_add_lo = mul_op[0] ? mul_sh[47:0]  : 48'd0;
+    wire [47:0] mac_add_hi = mul_op[0] ? mul_sh[95:48] : 48'd0;
+    wire [48:0] sum_lo49   = {1'b0, acc_lo} + {1'b0, mac_add_lo};
+    wire [48:0] sum_hi_cin = {acc_hi, acc_carry} + {add_hi_d1, acc_carry};
+    wire [47:0] sum_hi48   = sum_hi_cin[48:1];
 
-    // Pre-registered 3-bit comparator mode + single shared 94-bit borrow-subtractor
+    // Two-stroke 47+47 split borrow-subtractor (exact cross-word borrow, 0 false HOLD)
     reg [2:0]  cmp_mode;
     reg [93:0] cmp_a;
     reg [93:0] cmp_b;
     always @(*) begin
         case (cmp_mode)
-            3'd0: begin cmp_a = {10'd0, s1_sq_r};           cmp_b = {10'd0, s2_sq_r};                 end
-            3'd1: begin cmp_a = {10'd0, s2_sq_r};           cmp_b = {10'd0, s1_sq_r};                 end
-            3'd2: begin cmp_a = {10'd0, scratch_93[83:0]};  cmp_b = {8'd0, lat_tau_lo86};             end
-            3'd3: begin cmp_a = {8'd0, mul_acc[85:0]};      cmp_b = {8'd0, lat_tau_lo86};             end
-            3'd4: begin cmp_a = {10'd0, s1_sq_r};           cmp_b = {12'd0, scratch_93[79:0], 2'b00}; end
-            3'd5: begin cmp_a = {10'd0, s1_sq_r};           cmp_b = {11'd0, scratch_93[79:0], 3'b000};end
-            3'd6: begin cmp_a = {10'd0, s2_sq_r};           cmp_b = {11'd0, scratch_93[79:0], 3'b000};end
-            default: begin cmp_a = {31'd0, mul_acc[62:0]};  cmp_b = {1'b0, scratch_93};               end
+            3'd0: begin cmp_a = {10'd0, s1_sq_r};              cmp_b = {10'd0, s2_sq_r};                 end
+            3'd1: begin cmp_a = {10'd0, s2_sq_r};              cmp_b = {10'd0, s1_sq_r};                 end
+            3'd2: begin cmp_a = {10'd0, scratch_93[83:0]};     cmp_b = {8'd0, lat_tau_lo86};             end
+            3'd3: begin cmp_a = {8'd0, mul_acc_full[85:0]};    cmp_b = {8'd0, lat_tau_lo86};             end
+            3'd4: begin cmp_a = {10'd0, s1_sq_r};              cmp_b = {12'd0, scratch_93[79:0], 2'b00}; end
+            3'd5: begin cmp_a = {10'd0, s1_sq_r};              cmp_b = {11'd0, scratch_93[79:0], 3'b000};end
+            3'd6: begin cmp_a = {10'd0, s2_sq_r};              cmp_b = {11'd0, scratch_93[79:0], 3'b000};end
+            default: begin cmp_a = {31'd0, mul_acc_full[62:0]}; cmp_b = {1'b0, scratch_93};              end
         endcase
     end
 
-    wire [94:0] diff_ba = {1'b0, cmp_b} - {1'b0, cmp_a};
-    wire        a_gt_b  = diff_ba[94];
+    reg         cmp_lo_borr;
+    reg  [46:0] cmp_lo_diff;
+    wire [47:0] sub_lo48     = {1'b0, cmp_b[46:0]} - {1'b0, cmp_a[46:0]};
+    wire        cmp_hi_cin   = ~cmp_lo_borr;
+    wire [48:0] sub_hi_cin   = {1'b0, cmp_b[93:47], cmp_hi_cin} + {1'b0, ~cmp_a[93:47], cmp_hi_cin};
+    wire        a_gt_b_2s    = ~sub_hi_cin[48];
+    wire [83:0] full_diff_84 = {sub_hi_cin[37:1], cmp_lo_diff};
 
     reg [47:0] next_mul_op;
     reg [60:0] next_mul_sh61;
     always @(*) begin
         case (mac_phase)
-            3'd0: begin next_mul_op = {6'd0, lat_abs_s2}; next_mul_sh61 = {19'd0, lat_abs_s2}; end
-            3'd1: begin next_mul_op = {5'd0, lat_abs_ds}; next_mul_sh61 = {18'd0, lat_abs_ds}; end
-            3'd2: begin next_mul_op = {8'd0, lat_np};     next_mul_sh61 = {21'd0, lat_np};     end
-            3'd3: begin next_mul_op = {16'd0, lat_dk};    next_mul_sh61 = {32'd0, SI_C_29};    end
-            3'd4: begin next_mul_op = {16'd0, lat_tclk};  next_mul_sh61 = mul_acc[60:0];       end
-            default: begin next_mul_op = {16'd0, lat_dist}; next_mul_sh61 = {30'd0, TWO_E9_31}; end
+            3'd0: begin next_mul_op = {6'd0, lat_abs_s2}; next_mul_sh61 = {19'd0, lat_abs_s2};    end
+            3'd1: begin next_mul_op = {5'd0, lat_abs_ds}; next_mul_sh61 = {18'd0, lat_abs_ds};    end
+            3'd2: begin next_mul_op = {8'd0, lat_np};     next_mul_sh61 = {21'd0, lat_np};        end
+            3'd3: begin next_mul_op = {16'd0, lat_dk};    next_mul_sh61 = {32'd0, SI_C_29};       end
+            3'd4: begin next_mul_op = {16'd0, lat_tclk};  next_mul_sh61 = mul_acc_full[60:0];     end
+            default: begin next_mul_op = {16'd0, lat_dist}; next_mul_sh61 = {30'd0, TWO_E9_31};   end
         endcase
     end
 
@@ -274,10 +290,10 @@ module bell_ky_sluice (
                 cycle_out <= cycle_out + 64'd1;
                 if (mac_phase < 3'd7) begin
                     if ((bit_cnt == 6'd47) && (mac_phase == 3'd0) && (!kill_latched_out)) begin
-                        s1_sq_r <= mul_acc[83:0];
+                        s1_sq_r <= mul_acc_full[83:0];
                     end
                     if ((bit_cnt == 6'd47) && (mac_phase == 3'd1) && (!kill_latched_out)) begin
-                        s2_sq_r <= mul_acc[83:0];
+                        s2_sq_r <= mul_acc_full[83:0];
                     end
                 end else begin
                     busy_out             <= 1'b0;
@@ -337,74 +353,100 @@ module bell_ky_sluice (
     end
 
     always @(posedge clk) begin
-        // Stage-B pipelined No-Signalling accumulator (runs 1 cycle after load_en)
-        if (ns_pipe_vld) begin
-            max_ns_dev <= (pipe_dev >= base_ns) ? pipe_dev : base_ns;
-        end else if (ns_pipe_clr) begin
-            max_ns_dev <= 41'd0;
+        // Decoupled II=1 No-Signalling 3-stage tail (1 carry chain per cycle)
+        ns_s2_vld <= ns_s1_vld;
+        if (ns_s1_vld) begin
+            ns_abs1 <= ns_d1[41] ? (-ns_d1[40:0]) : ns_d1[40:0];
+            ns_abs2 <= ns_d2[41] ? (-ns_d2[40:0]) : ns_d2[40:0];
         end
-        ns_pipe_vld <= 1'b0;
-        ns_pipe_clr <= 1'b0;
+
+        ns_s3_vld <= ns_s2_vld;
+        if (ns_s2_vld) begin
+            ns_pair_max <= (ns_abs1 >= ns_abs2) ? ns_abs1 : ns_abs2;
+        end
+
+        if (ns_s3_vld) begin
+            max_ns_dev <= (ns_pair_max >= max_ns_dev) ? ns_pair_max : max_ns_dev;
+        end
+
+        ns_s1_vld <= 1'b0;
+
+        // Always latch low-half comparator stroke so Stroke 1 is ready on next cycle
+        cmp_lo_borr <= sub_lo48[47];
+        cmp_lo_diff <= sub_lo48[46:0];
 
         if (busy_out) begin
-            if ((mac_phase == 3'd0) && (bit_cnt == 6'd1)) begin
-                lat_ns_breach <= (max_ns_dev > {1'b0, lat_tau_ns});
+            if (mac_phase == 3'd0) begin
+                if (bit_cnt == 6'd0) begin
+                    lat_abs_ds <= lat_diff_sigma[43] ? (-lat_diff_sigma[42:0]) : lat_diff_sigma[42:0];
+                end else if (bit_cnt == 6'd4) begin
+                    lat_ns_breach <= (max_ns_dev > {1'b0, lat_tau_ns});
+                end
             end
             if (mac_phase < 3'd7) begin
                 if (mac_phase == 3'd2) begin
-                    if (bit_cnt == 6'd0) begin
-                        s1_gt_s2   <= a_gt_b;
-                        scratch_93 <= {9'd0, diff_ba[83:0]};
+                    if (bit_cnt == 6'd1) begin
+                        s1_gt_s2   <= a_gt_b_2s;
+                        scratch_93 <= {9'd0, full_diff_84};
                         cmp_mode   <= 3'd1;
-                    end else if (bit_cnt == 6'd1) begin
-                        if (s1_gt_s2) scratch_93 <= {9'd0, diff_ba[83:0]};
+                    end else if (bit_cnt == 6'd3) begin
+                        if (s1_gt_s2) scratch_93 <= {9'd0, full_diff_84};
                         cmp_mode <= 3'd2;
-                    end else if (bit_cnt == 6'd2) begin
-                        flag_sig_shift <= (!lat_tau_hi_nz) && a_gt_b;
+                    end else if (bit_cnt == 6'd5) begin
+                        flag_sig_shift <= (!lat_tau_hi_nz) && a_gt_b_2s;
                         cmp_mode       <= 3'd3;
                     end
                 end else if (mac_phase == 3'd4) begin
-                    if (bit_cnt == 6'd0) begin
-                        flag_bell_viol <= a_gt_b;
+                    if (bit_cnt == 6'd1) begin
+                        flag_bell_viol <= a_gt_b_2s;
                         cmp_mode       <= 3'd5;
-                    end else if (bit_cnt == 6'd1) begin
-                        flag_super_ts <= a_gt_b;
+                    end else if (bit_cnt == 6'd3) begin
+                        flag_super_ts <= a_gt_b_2s;
                         cmp_mode      <= 3'd6;
-                    end else if (bit_cnt == 6'd2) begin
-                        if (a_gt_b) flag_super_ts <= 1'b1;
+                    end else if (bit_cnt == 6'd5) begin
+                        flag_super_ts <= flag_super_ts | a_gt_b_2s;
                         cmp_mode <= 3'd7;
                     end
                 end
 
                 if (bit_cnt < 6'd47) begin
-                    bit_cnt <= bit_cnt + 6'd1;
-                    mul_acc <= next_acc;
-                    mul_op  <= (mul_op >> 1);
-                    mul_sh  <= (mul_sh << 1);
+                    bit_cnt   <= bit_cnt + 6'd1;
+                    acc_lo    <= sum_lo49[47:0];
+                    acc_carry <= sum_lo49[48];
+                    add_hi_d1 <= mac_add_hi;
+                    acc_hi    <= sum_hi48;
+                    mul_op    <= (mul_op >> 1);
+                    mul_sh    <= (mul_sh << 1);
                 end else begin
                     bit_cnt   <= 6'd0;
                     mac_phase <= mac_phase + 3'd1;
-                    mul_acc   <= 96'd0;
+                    acc_lo    <= 48'd0;
+                    acc_hi    <= 48'd0;
+                    acc_carry <= 1'b0;
+                    add_hi_d1 <= 48'd0;
                     mul_op    <= next_mul_op;
                     mul_sh    <= {35'd0, next_mul_sh61};
                     if (mac_phase == 3'd1) begin
                         cmp_mode <= 3'd0;
                     end else if (mac_phase == 3'd2) begin
-                        if ((!lat_tau_hi_nz) && a_gt_b) flag_sig_shift <= 1'b1;
+                        flag_sig_shift <= flag_sig_shift | ((!lat_tau_hi_nz) & a_gt_b_2s);
                     end else if (mac_phase == 3'd3) begin
-                        scratch_93 <= {13'd0, mul_acc[79:0]};
+                        scratch_93 <= {13'd0, mul_acc_full[79:0]};
                         cmp_mode   <= 3'd4;
                     end else if (mac_phase == 3'd5) begin
-                        scratch_93 <= mul_acc[92:0];
+                        scratch_93 <= mul_acc_full[92:0];
                     end else if (mac_phase == 3'd6) begin
-                        flag_lc_bad <= lat_lc_zero || (!a_gt_b);
+                        flag_lc_bad <= lat_lc_zero || (!a_gt_b_2s);
                     end
                 end
             end
         end else if ((!l01_reset_strobe) && load_en) begin
             if (slot_idx == 3'd0) begin
                 n_pulses_latched <= n_pulses_in;
-                ns_pipe_clr      <= 1'b1;
+                max_ns_dev       <= 41'd0;
+                ns_s1_vld        <= 1'b0;
+                ns_s2_vld        <= 1'b0;
+                ns_s3_vld        <= 1'b0;
             end
             if (mn_idx == 2'd0) begin
                 if (!arm_idx) sigma_k1 <= c_signed;
@@ -414,9 +456,9 @@ module bell_ky_sluice (
             end else begin
                 if (!arm_idx) sigma_k1 <= sigma_k1 + c_signed;
                 else          sigma_k2 <= sigma_k2 + c_signed;
-                ns_pipe_vld <= 1'b1;
-                ns_d1       <= sub_main;
-                ns_d2       <= is_idx3 ? sub_b1 : 42'sd0;
+                ns_s1_vld <= 1'b1;
+                ns_d1     <= sub_main;
+                ns_d2     <= is_idx3 ? sub_b1 : 42'sd0;
                 if (mn_idx == 2'd1) begin
                     pb1_reg <= cur_pb;
                 end else if (mn_idx == 2'd2) begin
@@ -429,7 +471,10 @@ module bell_ky_sluice (
             bit_cnt        <= 6'd0;
             mul_op         <= {6'd0, abs_s1_now};
             mul_sh         <= {54'd0, abs_s1_now};
-            mul_acc        <= 96'd0;
+            acc_lo         <= 48'd0;
+            acc_hi         <= 48'd0;
+            acc_carry      <= 1'b0;
+            add_hi_d1      <= 48'd0;
             flag_sig_shift <= 1'b0;
             flag_bell_viol <= 1'b0;
             flag_super_ts  <= 1'b0;
@@ -445,7 +490,7 @@ module bell_ky_sluice (
             lat_tomo_bad   <= (tomo_frob_diff_sq > tau_tomo_sq);
             lat_quorum_ok  <= (replicated_series >= min_series);
             lat_abs_s2     <= abs_s2_now;
-            lat_abs_ds     <= abs_ds_now;
+            lat_diff_sigma <= diff_sigma_now;
             lat_np         <= n_pulses_in;
             lat_dk         <= delta_k_cycles;
             lat_tclk       <= t_clk_ps;

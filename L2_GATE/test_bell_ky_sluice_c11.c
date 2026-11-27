@@ -316,5 +316,36 @@ int main(void) {
     bky_sluice_eval(&r, &in);
     print_vec("V20", &r);
 
+    /* V21: L01 Reset + Cross-Word Borrow OPEN (ds_sq = 0x10_0000010000000400 > tau = 0x0F_0000020000000800,
+     *      where ds_lo < tau_lo across BOTH bit 47 and bit 64 -> must OPEN, never false HOLD!) */
+    bky_sluice_l01_reset(&r, true);
+    {
+        uint64_t n32 = (1ULL << 32);
+        int64_t  c_b = (int64_t)(1ULL << 31) + 4LL;
+        stream_symmetric_chsh_block(&r, n32,
+            c_b, c_b, c_b, -c_b,
+            -c_b, -c_b, -c_b, c_b);
+        in = nominal_eval_cfg(n32);
+        in.tau_diff_sq.hi = 0x0FULL;
+        in.tau_diff_sq.lo = 0x0000020000000800ULL;
+        bky_sluice_eval(&r, &in);
+        print_vec("V21", &r);
+    }
+
+    /* V22: Cross-Word Borrow HOLD (ds_sq = 0x10_0000010000000400 < tau = 0x11_0000000000000000,
+     *      where ds_lo > tau_lo forces low-half borrow = 1 absorbed by hi-word +1 -> HOLD!) */
+    {
+        uint64_t n32 = (1ULL << 32);
+        int64_t  c_b = (int64_t)(1ULL << 31) + 4LL;
+        stream_symmetric_chsh_block(&r, n32,
+            c_b, c_b, c_b, -c_b,
+            -c_b, -c_b, -c_b, c_b);
+        in = nominal_eval_cfg(n32);
+        in.tau_diff_sq.hi = 0x11ULL;
+        in.tau_diff_sq.lo = 0x0000000000000000ULL;
+        bky_sluice_eval(&r, &in);
+        print_vec("V22", &r);
+    }
+
     return 0;
 }

@@ -208,5 +208,23 @@ int main(void) {
     omni_crash3_eval(&r, &in);
     print_vec("V20", &r);
 
+    /* V21: L01 Reset + Exact 2^63 = INT64_MAX + 1 Corner (q=0x7FFFFFFF, p=-0x7FFFFFFF, c_care=0xFFFFFFFFU) -> KILL */
+    omni_crash3_l01_reset(&r, true);
+    in = nominal_in(r.expected_epoch);
+    in.q_bound   = 0x7FFFFFFFU;
+    in.q_pos     = 0x7FFFFFFF;
+    in.p_mom     = -0x7FFFFFFF;
+    in.k_defect  = 1U;
+    in.b_barrier = 0U;
+    in.c_care    = 0xFFFFFFFFU;
+    omni_crash3_eval(&r, &in);
+    print_vec("V21", &r);
+
+    /* V22: L01 Reset + UINT32_MAX Epoch Wraparound Fence (seq_epoch = 0xFFFFFFFFU) -> HOLD (0.00 V DC) */
+    omni_crash3_l01_reset(&r, true);
+    in = nominal_in(0xFFFFFFFFU);
+    omni_crash3_eval(&r, &in);
+    print_vec("V22", &r);
+
     return 0;
 }

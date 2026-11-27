@@ -336,6 +336,24 @@ module tb_omni_crash3_sluice;
         pulse_eval();
         print_vec("V20");
 
+        // V21: L01 Reset + Exact 2^63 = INT64_MAX + 1 Corner (q=0x7FFFFFFF, p=-0x7FFFFFFF, c_care=0xFFFFFFFF) -> KILL
+        pulse_l01_reset(1'b1);
+        set_nominal(expected_epoch_out);
+        q_bound   = 32'h7FFF_FFFF;
+        q_pos     = 32'sd2147483647;
+        p_mom     = -32'sd2147483647;
+        k_defect  = 32'd1;
+        b_barrier = 32'd0;
+        c_care    = 32'hFFFF_FFFF;
+        pulse_eval();
+        print_vec("V21");
+
+        // V22: L01 Reset + UINT32_MAX Epoch Wraparound Fence (seq_epoch = 0xFFFFFFFF) -> HOLD
+        pulse_l01_reset(1'b1);
+        set_nominal(32'hFFFF_FFFF);
+        pulse_eval();
+        print_vec("V22");
+
         $finish;
     end
 

@@ -427,6 +427,25 @@ module tb_bell_ky_sluice;
         pulse_eval();
         print_vec("V20");
 
+        // V21: L01 Reset + Cross-Word Borrow OPEN (ds_sq > tau while ds_lo < tau_lo across bit 47 & 64)
+        pulse_l01_reset(1'b1);
+        stream_block(40'h1_0000_0000,
+            45'sd2147483652, 45'sd2147483652, 45'sd2147483652, -45'sd2147483652,
+            -45'sd2147483652, -45'sd2147483652, -45'sd2147483652, 45'sd2147483652);
+        set_nominal_cfg(40'h1_0000_0000);
+        tau_diff_sq = {64'h0000_0000_0000_000F, 64'h0000_0200_0000_0800};
+        pulse_eval();
+        print_vec("V21");
+
+        // V22: Cross-Word Borrow HOLD (ds_sq < tau while ds_lo > tau_lo across bit 47 & 64)
+        stream_block(40'h1_0000_0000,
+            45'sd2147483652, 45'sd2147483652, 45'sd2147483652, -45'sd2147483652,
+            -45'sd2147483652, -45'sd2147483652, -45'sd2147483652, 45'sd2147483652);
+        set_nominal_cfg(40'h1_0000_0000);
+        tau_diff_sq = {64'h0000_0000_0000_0011, 64'h0000_0000_0000_0000};
+        pulse_eval();
+        print_vec("V22");
+
         $finish;
     end
 
