@@ -32,6 +32,8 @@ L2_GATE/gothenburg_corridor_rosetta_top.sv
 L2_GATE/k_filter_sluice.h
 L2_GATE/k_filter_sluice.sv
 L2_GATE/kpod_fpga_guillotine_12u5.sv
+L2_GATE/nlk_enigma_sluice.h
+L2_GATE/nlk_enigma_sluice.sv
 L2_GATE/omega_hal_pack.c
 L2_GATE/omega_qnx_resmgr.c
 L2_GATE/omega_spi_frame_64b.h
@@ -47,6 +49,7 @@ L2_GATE/spec416_infranett_witness_gate.sv
 L2_GATE/tb_bell_ky_sluice.sv
 L2_GATE/tb_k_filter_sluice.sv
 L2_GATE/tb_kpod_guillotine_and_205b_decoder.sv
+L2_GATE/tb_nlk_enigma_sluice.sv
 L2_GATE/tb_omega_symplectic_watchdog_64b.sv
 L2_GATE/tb_omni_crash3_sluice.sv
 L2_GATE/tb_temporal_bifurcation_400c.sv
@@ -57,6 +60,8 @@ L2_GATE/test_bell_ky_7qubit_cptp.py
 L2_GATE/test_bell_ky_sluice_c11.c
 L2_GATE/test_k_filter_sluice_c11.c
 L2_GATE/test_k_filter_sluice_dual_track.py
+L2_GATE/test_nlk_enigma_board_sluice.py
+L2_GATE/test_nlk_enigma_c11.c
 L2_GATE/test_omega_hal_pack_c11.c
 L2_GATE/test_omni_crash3_c11.c
 L2_GATE/test_omni_crash3_linf.py

@@ -2,7 +2,7 @@
 # Default target is FAIL-CLOSED (0.00 V DC). Explicit verification is mandatory.
 
 .DEFAULT_GOAL := hold
-.PHONY: hold verify sim_400c sim_205b sim_omega64 qnx_omega64 sim_vektor_a qnx_vektor_a sim_k_sluice sim_bell_ky sim_omni_crash3
+.PHONY: hold verify sim_400c sim_205b sim_omega64 qnx_omega64 sim_vektor_a qnx_vektor_a sim_k_sluice sim_bell_ky sim_omni_crash3 sim_nlk_enigma
 
 hold:
 	@echo "[HOLD] 0.00 V DC. System is at rest. Run 'make verify' to execute L1-L3 proof chains and all 10 Demonstrator Suites (60/60 PASS)."
@@ -74,6 +74,14 @@ sim_omni_crash3:
 	@vvp /tmp/ky_rox_tb_omni_crash3.vvp
 	@rm -f /tmp/ky_rox_tb_omni_crash3.vvp
 
+sim_nlk_enigma:
+	@gcc -std=c11 -O2 -mgeneral-regs-only -Wall -Wextra -Werror -pedantic -Wconversion -Wsign-conversion -o /tmp/ky_rox_test_nlk_enigma L2_GATE/test_nlk_enigma_c11.c
+	@/tmp/ky_rox_test_nlk_enigma
+	@rm -f /tmp/ky_rox_test_nlk_enigma
+	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_nlk_enigma.vvp L2_GATE/nlk_enigma_sluice.sv L2_GATE/tb_nlk_enigma_sluice.sv
+	@vvp /tmp/ky_rox_tb_nlk_enigma.vvp
+	@rm -f /tmp/ky_rox_tb_nlk_enigma.vvp
+
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py
 	@PYTHONPATH=L1_LAW python3 -m unittest -q L1_LAW/test_ky_parser.py
@@ -86,6 +94,7 @@ verify:
 	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_k_filter_sluice_dual_track.py
 	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_bell_ky_7qubit_cptp.py
 	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_omni_crash3_linf.py
+	@PYTHONPATH=L2_GATE python3 -m unittest -q L2_GATE/test_nlk_enigma_board_sluice.py
 	@PYTHONPATH=tools python3 -m unittest -q tools/test_contract_blast_radius_scanner.py
 	@PYTHONPATH=tools python3 -m unittest -q tools/test_agy_ky_blackbox_harness.py
 	@PYTHONPATH=tools python3 -m unittest -q tools/test_export_blast_sphere.py
