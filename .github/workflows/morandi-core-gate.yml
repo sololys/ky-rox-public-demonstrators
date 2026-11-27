@@ -1,6 +1,10 @@
 name: Morandi-Core Consequence Gate
 
 on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -9,7 +13,7 @@ permissions:
 jobs:
   morandi-core-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - name: Check out exact revision
         uses: actions/checkout@v4
@@ -69,6 +73,15 @@ jobs:
             exit 1
           fi
           echo "DEFAULT_HOLD_GATE=PASS (0.00 V DC)"
+
+      - name: Install C11, Icarus Verilog, and Yosys (iCE40 library) toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc binutils iverilog yosys
+          test -f /usr/share/yosys/ice40/cells_sim.v
+
+      - name: Execute C11 & SystemVerilog RTL Hardware Sluice Targets
+        run: make sim_400c sim_205b sim_omega64 sim_vektor_a sim_k_sluice sim_bell_ky sim_omni_crash3 sim_nlk_enigma
 
       - name: Execute Explicit Realization Contract (make verify)
         run: make verify

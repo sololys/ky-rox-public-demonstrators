@@ -131,7 +131,7 @@ class TestKFilterSluiceDualTrack(unittest.TestCase):
                     check=True,
                 )
                 rtl_vecs = [
-                    ln for ln in subprocess.check_output(["vvp", str(vvp_bin)], text=True).splitlines()
+                    ln for ln in subprocess.check_output(["vvp", "-N", str(vvp_bin)], text=True).splitlines()
                     if ln.startswith("VEC ")
                 ]
                 self.assertEqual(c_vecs, rtl_vecs)

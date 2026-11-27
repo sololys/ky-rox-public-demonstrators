@@ -192,12 +192,11 @@ module tb_vektor_a_spec411_sluice;
         run_galvanic_vec(4'd8, 1'b1, 1'b1, 32'd120000, 32'd200000, 1'b1, 32'd1, 32'd100, 32'd5, 32'd100, 32'd100, 32'd50, 1'b1, 8'h13);
 
         if (err_count != 0) begin
-            $display("tb_vektor_a_spec411_sluice: FAIL (%0d errors)", err_count);
-            $finish(1);
+            $fatal(1, "tb_vektor_a_spec411_sluice: FAIL (%0d errors)", err_count);
         end
 
         $display("VEKTOR_A_SPEC411_RTL=PASS (17/17 CYCLE-EXACT VECTORS, 133425 PS DIAMOND, XOR == 0)");
-        $finish(0);
+        $finish;
     end
 
 endmodule

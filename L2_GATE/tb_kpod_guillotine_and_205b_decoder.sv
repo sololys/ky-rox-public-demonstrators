@@ -173,8 +173,7 @@ module tb_kpod_guillotine_and_205b_decoder;
         @(posedge clk_80khz); #1; // K-POD guillotine evaluates witness_anchor_valid = 1 -> 5000 mV OPEN
 
         if (rtl_verdict_code !== 8'h01 || voltage_mv_out !== 16'd5000 || interlock_relay_en_out !== 1'b1) begin
-            $display("[FAIL] Vector 1 (OPEN): rtl_verdict=0x%02h, voltage=%0d mV", rtl_verdict_code, voltage_mv_out);
-            $finish(1);
+            $fatal(1, "[FAIL] Vector 1 (OPEN): rtl_verdict=0x%02h, voltage=%0d mV", rtl_verdict_code, voltage_mv_out);
         end
         $display("[PASS] Vector 1 (NOMINAL OPEN)      : 205B RTL=0x%02h | D-Latch=%0d mV | Relay=%0d | Fuse=0x%016h",
                  rtl_verdict_code, voltage_mv_out, interlock_relay_en_out, monotone_fuse_reg_out);
@@ -191,8 +190,7 @@ module tb_kpod_guillotine_and_205b_decoder;
         privileged_key_clear = 1'b1;
         @(posedge clk_80khz); #1;
         if (v_gate_out_5v !== 1'b0 || a5_envelope_mv !== 16'd2500 || voltage_mv_out !== 16'd0) begin
-            $display("[FAIL] Vector 2 (A5 HOLD): a5_envelope=%0d mV, d_latch=%0d mV", a5_envelope_mv, voltage_mv_out);
-            $finish(1);
+            $fatal(1, "[FAIL] Vector 2 (A5 HOLD): a5_envelope=%0d mV, d_latch=%0d mV", a5_envelope_mv, voltage_mv_out);
         end
         $display("[PASS] Vector 2 (A5 POCKET HOLD)    : 205B RTL=0x%02h | A5-Pocket=%0d mV | Raw D-Latch=%0d mV",
                  rtl_verdict_code, a5_envelope_mv, voltage_mv_out);
@@ -210,8 +208,7 @@ module tb_kpod_guillotine_and_205b_decoder;
         @(posedge clk_80khz); #1; // Decoder outputs 0xFF TRAP_TAMPER
         @(posedge clk_80khz); #1; // Guillotine latches KILL (0 mV, trap_latched_out = 1)
         if (rtl_verdict_code !== 8'hFF || voltage_mv_out !== 16'd0 || trap_latched_out !== 1'b1 || ky_glyph_stage_out !== 4'd15) begin
-            $display("[FAIL] Vector 3 (FARV TAMPER): rtl_verdict=0x%02h, trap=%0d", rtl_verdict_code, trap_latched_out);
-            $finish(1);
+            $fatal(1, "[FAIL] Vector 3 (FARV TAMPER): rtl_verdict=0x%02h, trap=%0d", rtl_verdict_code, trap_latched_out);
         end
         $display("[PASS] Vector 3 (FARV TRAP_TAMPER)  : 205B RTL=0x%02h | D-Latch=%0d mV | TrapLatched=%0d | Glyph=0x%01h (✕)",
                  rtl_verdict_code, voltage_mv_out, trap_latched_out, ky_glyph_stage_out);
@@ -228,8 +225,7 @@ module tb_kpod_guillotine_and_205b_decoder;
         @(posedge clk_80khz); #1;
         @(posedge clk_80khz); #1;
         if (voltage_mv_out !== 16'd0 || trap_latched_out !== 1'b1) begin
-            $display("[FAIL] Vector 4 (STICKY LATCH BYPASS): voltage=%0d mV", voltage_mv_out);
-            $finish(1);
+            $fatal(1, "[FAIL] Vector 4 (STICKY LATCH BYPASS): voltage=%0d mV", voltage_mv_out);
         end
         $display("[PASS] Vector 4 (UZZAH STICKY LOCK) : Valid capsule blocked while trap_latched_out=1 (0 mV DC)");
 
@@ -241,14 +237,13 @@ module tb_kpod_guillotine_and_205b_decoder;
         privileged_key_clear = 1'b0;
         @(posedge clk_80khz); #1;
         if (voltage_mv_out !== 16'd5000 || trap_latched_out !== 1'b0) begin
-            $display("[FAIL] Vector 4B (RESET_BY_L01): voltage=%0d mV", voltage_mv_out);
-            $finish(1);
+            $fatal(1, "[FAIL] Vector 4B (RESET_BY_L01): voltage=%0d mV", voltage_mv_out);
         end
         $display("[PASS] Vector 5 (RESET_BY_L01 OPEN) : Manual L01 key cleared trap -> Restored to %0d mV DC", voltage_mv_out);
         $display("==============================================================================");
         $display("ALL 5/5 RTL CO-SIMULATION VECTORS PASSED (0 ERRORS)");
         $display("==============================================================================");
-        $finish(0);
+        $finish;
     end
 
 endmodule

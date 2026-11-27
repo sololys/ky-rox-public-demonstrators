@@ -221,7 +221,7 @@ class TestNlkEnigmaCoordinateBoardSluice(unittest.TestCase):
                     check=True,
                 )
                 rtl_out = [
-                    ln for ln in subprocess.check_output(["vvp", str(rtl_vvp)], text=True).splitlines()
+                    ln for ln in subprocess.check_output(["vvp", "-N", str(rtl_vvp)], text=True).splitlines()
                     if ln.startswith("V")
                 ]
                 self.assertEqual(c_out, rtl_out)
@@ -245,7 +245,7 @@ class TestNlkEnigmaCoordinateBoardSluice(unittest.TestCase):
                         check=True,
                     )
                     ps_out = [
-                        ln for ln in subprocess.check_output(["vvp", str(ps_vvp)], text=True).splitlines()
+                        ln for ln in subprocess.check_output(["vvp", "-N", str(ps_vvp)], text=True).splitlines()
                         if ln.startswith("V")
                     ]
                     self.assertEqual(c_out, ps_out)

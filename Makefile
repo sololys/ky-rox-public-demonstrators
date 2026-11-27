@@ -10,12 +10,12 @@ hold:
 
 sim_400c:
 	@iverilog -g2012 -o /tmp/ky_rox_tb_400c.vvp L2_GATE/temporal_bifurcation_400c.sv L2_GATE/tb_temporal_bifurcation_400c.sv
-	@vvp /tmp/ky_rox_tb_400c.vvp
+	@vvp -N /tmp/ky_rox_tb_400c.vvp
 	@rm -f /tmp/ky_rox_tb_400c.vvp
 
 sim_205b:
 	@iverilog -g2012 -o /tmp/ky_rox_tb_205b.vvp L2_GATE/fpga_capsule_frame_205b_decoder.sv L2_GATE/kpod_fpga_guillotine_12u5.sv L2_GATE/tb_kpod_guillotine_and_205b_decoder.sv
-	@vvp /tmp/ky_rox_tb_205b.vvp
+	@vvp -N /tmp/ky_rox_tb_205b.vvp
 	@rm -f /tmp/ky_rox_tb_205b.vvp
 
 sim_omega64:
@@ -23,7 +23,7 @@ sim_omega64:
 	@/tmp/ky_rox_test_omega_hal
 	@rm -f /tmp/ky_rox_test_omega_hal
 	@iverilog -g2012 -o /tmp/ky_rox_tb_omega64.vvp L2_GATE/omega_symplectic_watchdog_64b.sv L2_GATE/tb_omega_symplectic_watchdog_64b.sv
-	@vvp /tmp/ky_rox_tb_omega64.vvp
+	@vvp -N /tmp/ky_rox_tb_omega64.vvp
 	@rm -f /tmp/ky_rox_tb_omega64.vvp
 
 qnx_omega64:
@@ -40,7 +40,7 @@ sim_vektor_a:
 	@/tmp/ky_rox_test_vektor_a
 	@rm -f /tmp/ky_rox_test_vektor_a
 	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_vektor_a.vvp L2_GATE/vektor_a_airlock.sv L2_GATE/spec411_galvanic_gate.sv L2_GATE/vektor_a_spec411_sluice_top.sv L2_GATE/tb_vektor_a_spec411_sluice.sv
-	@vvp /tmp/ky_rox_tb_vektor_a.vvp
+	@vvp -N /tmp/ky_rox_tb_vektor_a.vvp
 	@rm -f /tmp/ky_rox_tb_vektor_a.vvp
 
 qnx_vektor_a:
@@ -55,7 +55,7 @@ sim_k_sluice:
 	@/tmp/ky_rox_test_k_sluice
 	@rm -f /tmp/ky_rox_test_k_sluice
 	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_k_sluice.vvp L2_GATE/k_filter_sluice.sv L2_GATE/tb_k_filter_sluice.sv
-	@vvp /tmp/ky_rox_tb_k_sluice.vvp
+	@vvp -N /tmp/ky_rox_tb_k_sluice.vvp
 	@rm -f /tmp/ky_rox_tb_k_sluice.vvp
 
 sim_bell_ky:
@@ -63,7 +63,7 @@ sim_bell_ky:
 	@/tmp/ky_rox_test_bell_ky
 	@rm -f /tmp/ky_rox_test_bell_ky
 	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_bell_ky.vvp L2_GATE/bell_ky_sluice.sv L2_GATE/tb_bell_ky_sluice.sv
-	@vvp /tmp/ky_rox_tb_bell_ky.vvp
+	@vvp -N /tmp/ky_rox_tb_bell_ky.vvp
 	@rm -f /tmp/ky_rox_tb_bell_ky.vvp
 
 sim_omni_crash3:
@@ -71,7 +71,7 @@ sim_omni_crash3:
 	@/tmp/ky_rox_test_omni_crash3
 	@rm -f /tmp/ky_rox_test_omni_crash3
 	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_omni_crash3.vvp L2_GATE/omni_crash3_sluice.sv L2_GATE/tb_omni_crash3_sluice.sv
-	@vvp /tmp/ky_rox_tb_omni_crash3.vvp
+	@vvp -N /tmp/ky_rox_tb_omni_crash3.vvp
 	@rm -f /tmp/ky_rox_tb_omni_crash3.vvp
 
 sim_nlk_enigma:
@@ -79,7 +79,7 @@ sim_nlk_enigma:
 	@/tmp/ky_rox_test_nlk_enigma
 	@rm -f /tmp/ky_rox_test_nlk_enigma
 	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_nlk_enigma.vvp L2_GATE/nlk_enigma_sluice.sv L2_GATE/tb_nlk_enigma_sluice.sv
-	@vvp /tmp/ky_rox_tb_nlk_enigma.vvp
+	@vvp -N /tmp/ky_rox_tb_nlk_enigma.vvp
 	@rm -f /tmp/ky_rox_tb_nlk_enigma.vvp
 
 verify:

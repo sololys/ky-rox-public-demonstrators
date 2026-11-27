@@ -368,7 +368,7 @@ endmodule
                 capture_output=True,
                 text=True,
             )
-            res = subprocess.run(["vvp", vvp_bin], check=True, capture_output=True, text=True)
+            res = subprocess.run(["vvp", "-N", vvp_bin], check=True, capture_output=True, text=True)
             self.assertIn("RTL_GOTHENBURG_CORRIDOR_415_416_PASS", res.stdout)
 
     def test_08_l15_iverilog_master_top_208b_rosetta_and_205b_capsules(self) -> None:
@@ -587,7 +587,7 @@ endmodule
                 capture_output=True,
                 text=True,
             )
-            res = subprocess.run(["vvp", vvp_bin], check=True, capture_output=True, text=True)
+            res = subprocess.run(["vvp", "-N", vvp_bin], check=True, capture_output=True, text=True)
             self.assertIn("RTL_MASTER_ROSETTA_208B_205B_TOP_PASS", res.stdout)
 
 

@@ -812,7 +812,7 @@ module tb_cosim_205b;
         frame_valid = 0;
         $display("VEC_A: seq=%0d gate=0x%02h latch=0x%02h link_ok=%0d v5v=%0d code=0x%02h",
                  pre_seq_id, pre_gate_decision, post_hpis_latch_byte, capsule_linkage_ok, v_gate_out_5v, rtl_verdict_code);
-        if (v_gate_out_5v !== 1'b1 || rtl_verdict_code !== 8'h01 || capsule_linkage_ok !== 1'b1) $finish(1);
+        if (v_gate_out_5v !== 1'b1 || rtl_verdict_code !== 8'h01 || capsule_linkage_ok !== 1'b1) $fatal(1, "VEC_A_FAIL");
 
         // Vektor B: INTERLOCK_MISMATCH (d_k=OPEN, a_k=0)
         @(negedge clk);
@@ -823,7 +823,7 @@ module tb_cosim_205b;
         frame_valid = 0;
         $display("VEC_B: seq=%0d gate=0x%02h latch=0x%02h link_ok=%0d v5v=%0d code=0x%02h",
                  pre_seq_id, pre_gate_decision, post_hpis_latch_byte, capsule_linkage_ok, v_gate_out_5v, rtl_verdict_code);
-        if (v_gate_out_5v !== 1'b0 || rtl_verdict_code !== 8'hEE) $finish(1);
+        if (v_gate_out_5v !== 1'b0 || rtl_verdict_code !== 8'hEE) $fatal(1, "VEC_B_FAIL");
 
         // Vektor C: Tuklet CapsuleLinkage (W_POST.w_pre_hash != W_PRE.w_pre_hash)
         @(negedge clk);
@@ -834,10 +834,10 @@ module tb_cosim_205b;
         frame_valid = 0;
         $display("VEC_C: seq=%0d gate=0x%02h latch=0x%02h link_ok=%0d v5v=%0d code=0x%02h",
                  pre_seq_id, pre_gate_decision, post_hpis_latch_byte, capsule_linkage_ok, v_gate_out_5v, rtl_verdict_code);
-        if (v_gate_out_5v !== 1'b0 || rtl_verdict_code !== 8'hFF || capsule_linkage_ok !== 1'b0) $finish(1);
+        if (v_gate_out_5v !== 1'b0 || rtl_verdict_code !== 8'hFF || capsule_linkage_ok !== 1'b0) $fatal(1, "VEC_C_FAIL");
 
         $display("COSIM_ALL_PASS");
-        $finish(0);
+        $finish;
     end
 endmodule
 """
@@ -857,7 +857,7 @@ endmodule
             raise RuntimeError(f"iverilog compilation failed: {comp.stderr}")
 
         sim = subprocess.run(
-            ["vvp", out_vvp],
+            ["vvp", "-N", out_vvp],
             capture_output=True,
             text=True,
             check=False,

@@ -103,9 +103,9 @@ module tb_k_filter_sluice;
         @(negedge clk); load_nominal(); norm_err_sq = (64'd1 << 56) + 64'd1; norm_ref_sq = (64'd1 << 56) * 64'd20; step_en = 1'b1; @(posedge clk); #1; check_vec(11, 8'h12, 2'd2, 4'd11);
         do_l01_reset(); @(negedge clk); load_nominal(); p1 = 64'h8000_0000_0000_0000; step_en = 1'b1; @(posedge clk); #1; check_vec(12, 8'h12, 2'd2, 4'd6);
 
-        if (err_count != 0) $finish(1);
+        if (err_count != 0) $fatal(1, "tb_k_filter_sluice: FAIL (%0d errors)", err_count);
         $display("K_FILTER_SLUICE_RTL=PASS (12/12 VECTORS, 128-BIT EXACT, XOR == 0)");
-        $finish(0);
+        $finish;
     end
 
 endmodule

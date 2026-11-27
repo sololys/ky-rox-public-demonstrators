@@ -325,7 +325,7 @@ class TestOmniCrash3ConjunctiveSluice(unittest.TestCase):
                     ],
                     check=True,
                 )
-                rtl_out = [ln for ln in subprocess.check_output(["vvp", str(rtl_vvp)], text=True).splitlines() if ln.startswith("V")]
+                rtl_out = [ln for ln in subprocess.check_output(["vvp", "-N", str(rtl_vvp)], text=True).splitlines() if ln.startswith("V")]
                 self.assertEqual(c_out, rtl_out)
 
                 cells_sim = Path("/usr/share/yosys/ice40/cells_sim.v")
@@ -346,7 +346,7 @@ class TestOmniCrash3ConjunctiveSluice(unittest.TestCase):
                         ],
                         check=True,
                     )
-                    ps_out = [ln for ln in subprocess.check_output(["vvp", str(ps_vvp)], text=True).splitlines() if ln.startswith("V")]
+                    ps_out = [ln for ln in subprocess.check_output(["vvp", "-N", str(ps_vvp)], text=True).splitlines() if ln.startswith("V")]
                     self.assertEqual(c_out, ps_out)
 
     def test_05_z_phi_fibonacci_powers_cassini_sign_flips_and_63bit_corner(self) -> None:
