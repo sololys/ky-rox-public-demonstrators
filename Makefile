@@ -81,6 +81,9 @@ sim_nlk_enigma:
 	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_nlk_enigma.vvp L2_GATE/nlk_enigma_sluice.sv L2_GATE/tb_nlk_enigma_sluice.sv
 	@vvp -N /tmp/ky_rox_tb_nlk_enigma.vvp
 	@rm -f /tmp/ky_rox_tb_nlk_enigma.vvp
+	@iverilog -g2012 -Wall -o /tmp/ky_rox_tb_nlk_top.vvp L2_GATE/nlk_enigma_sluice.sv L2_GATE/nlk_enigma_upduino_top.sv L2_GATE/tb_nlk_enigma_upduino_top.sv
+	@vvp -N /tmp/ky_rox_tb_nlk_top.vvp
+	@rm -f /tmp/ky_rox_tb_nlk_top.vvp
 
 verify:
 	@python3 -m unittest -q L1_LAW/invariants_pure.py

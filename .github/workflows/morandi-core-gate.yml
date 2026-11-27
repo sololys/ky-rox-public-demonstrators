@@ -15,23 +15,44 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Check out exact revision
+      - name: Check out full commit history
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Cook-Levin History Gate (Reject WIP / provisional commits)
+      - name: Cook-Levin History Gate (Reject WIP / provisional commits across full span)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           python3 - <<'PY'
-          import re, subprocess, sys
-          msg = subprocess.check_output(["git", "log", "-1", "--pretty=%B"], text=True).strip()
+          import os, re, subprocess, sys
+          top = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()
+          os.chdir(top)
+          ev = os.environ.get("EVENT_NAME", "")
+          zero = "0" * 40
+          base = os.environ.get("PR_BASE", "") if ev == "pull_request" else os.environ.get("PUSH_BEFORE", "")
+          head = os.environ.get("PR_HEAD", "HEAD") if ev == "pull_request" else (os.environ.get("PUSH_SHA", "") or "HEAD")
+          def commit_exists(ref: str) -> bool:
+              return bool(ref) and ref != zero and subprocess.run(
+                  ["git", "cat-file", "-e", f"{ref}^{{commit}}"], capture_output=True
+              ).returncode == 0
+          if commit_exists(base):
+              shas = subprocess.check_output(["git", "rev-list", f"{base}..{head}"], text=True).split()
+          else:
+              shas = subprocess.check_output(["git", "rev-list", "-n", "1", head], text=True).split()
           forbidden = re.compile(r"(?i)\b(wip|fix typo|testing again|temp commit|quick fix)\b")
-          if forbidden.search(msg) or len(msg) < 12:
-              print("COOK_LEVIN_HISTORY_GATE=KILL (0.00 V DC)")
-              print(f"Rejected provisional commit message: {msg!r}")
-              sys.exit(1)
-          print("COOK_LEVIN_HISTORY_GATE=PASS")
+          for sha in shas:
+              msg = subprocess.check_output(["git", "log", "-1", "--pretty=%B", sha], text=True).strip()
+              if forbidden.search(msg) or len(msg) < 12:
+                  print("COOK_LEVIN_HISTORY_GATE=KILL (0.00 V DC)")
+                  print(f"Rejected provisional commit {sha[:7]}: {msg!r}")
+                  sys.exit(1)
+          print(f"COOK_LEVIN_HISTORY_GATE=PASS ({len(shas)} commit(s) verified)")
           PY
 
       - name: Pull Request Realization Contract Gate (Omega)

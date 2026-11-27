@@ -226,6 +226,19 @@ class TestNlkEnigmaCoordinateBoardSluice(unittest.TestCase):
                 ]
                 self.assertEqual(c_out, rtl_out)
 
+                top_vvp = tdir / "nlk_enigma_upduino_top.vvp"
+                subprocess.run(
+                    [
+                        "iverilog", "-g2012", "-Wall", "-o", str(top_vvp),
+                        str(HERE / "nlk_enigma_sluice.sv"),
+                        str(HERE / "nlk_enigma_upduino_top.sv"),
+                        str(HERE / "tb_nlk_enigma_upduino_top.sv"),
+                    ],
+                    check=True,
+                )
+                top_out = subprocess.check_output(["vvp", "-N", str(top_vvp)], text=True)
+                self.assertIn("UPDUINO_SPI_TOP=PASS", top_out)
+
                 cells_sim = Path("/usr/share/yosys/ice40/cells_sim.v")
                 if shutil.which("yosys") and cells_sim.exists():
                     synth_v = tdir / "nlk_enigma_synth.v"

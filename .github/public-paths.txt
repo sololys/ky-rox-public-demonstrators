@@ -34,6 +34,7 @@ L2_GATE/k_filter_sluice.sv
 L2_GATE/kpod_fpga_guillotine_12u5.sv
 L2_GATE/nlk_enigma_sluice.h
 L2_GATE/nlk_enigma_sluice.sv
+L2_GATE/nlk_enigma_upduino_top.sv
 L2_GATE/omega_hal_pack.c
 L2_GATE/omega_qnx_resmgr.c
 L2_GATE/omega_spi_frame_64b.h
@@ -50,6 +51,7 @@ L2_GATE/tb_bell_ky_sluice.sv
 L2_GATE/tb_k_filter_sluice.sv
 L2_GATE/tb_kpod_guillotine_and_205b_decoder.sv
 L2_GATE/tb_nlk_enigma_sluice.sv
+L2_GATE/tb_nlk_enigma_upduino_top.sv
 L2_GATE/tb_omega_symplectic_watchdog_64b.sv
 L2_GATE/tb_omni_crash3_sluice.sv
 L2_GATE/tb_temporal_bifurcation_400c.sv
